@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="img/placa-black-capa.webp">
+<link rel="preconnect" href="https://player.vimeo.com">
+<link rel="preconnect" href="https://i.vimeocdn.com">
+<link rel="preconnect" href="https://f.vimeocdn.com">
 
 <!-- PIXEL DO META / UTMIFY: cole os scripts aqui por último -->
 
@@ -18,6 +21,7 @@
 
 <!-- CONFIGURAÇÃO (preços, links, WhatsApp): edite o arquivo config.js e aumente o ?v= aqui e no obrigado.html -->
 <script src="config.js?v=2"></script>
+<script src="https://player.vimeo.com/api/player.js"></script>
 
 <style>
 :root{
@@ -35,7 +39,12 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 
 /* ===================== HERO ===================== */
 #hero{position:relative;min-height:100svh;background:var(--dark);color:#fff;display:flex;flex-direction:column;overflow:hidden}
-#hero video,#hero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+#hero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity .6s}
+#hero .poster.off{opacity:0}
+/* vídeo do Vimeo como fundo: sempre cobre a tela inteira (como object-fit:cover), sem som e sem cliques */
+.bgvid{position:absolute;inset:0;overflow:hidden;opacity:.55;pointer-events:none}
+.bgvid iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:0;
+  width:max(100%, calc(100svh * 16 / 9));height:max(100%, calc(100vw * 9 / 16));min-height:100%}
 #hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,15,25,.6) 0%,rgba(11,15,25,.2) 25%,rgba(11,15,25,.88) 50%,#0B0F19 72%)}
 .ticker{position:relative;z-index:2;background:var(--brand);overflow:hidden;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:8px 0}
 .ticker-track{display:inline-flex;gap:28px;animation:tick 26s linear infinite;padding-left:28px}
@@ -189,10 +198,11 @@ body.on-hero .wa{bottom:20px}
 
 <!-- ===================== PÁGINA DE ENTRADA ===================== -->
 <section id="hero">
+  <div class="bgvid" aria-hidden="true">
+    <iframe id="heroVideo" src="https://player.vimeo.com/video/1248335150?background=1&amp;autoplay=1&amp;loop=1&amp;muted=1&amp;autopause=0&amp;playsinline=1&amp;dnt=1"
+      allow="autoplay; fullscreen; picture-in-picture" tabindex="-1" title="Vídeo de fundo"></iframe>
+  </div>
   <img class="poster" src="img/placa-black-capa.webp" alt="">
-  <video id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="img/placa-black-capa.webp">
-    <source src="img/placa-black.mp4" type="video/mp4">
-  </video>
 
   <div class="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></div>
 
@@ -481,11 +491,22 @@ nextBtn.onclick = () => { const s=STEPS[cur]; if(s.valid && !s.valid()) return; 
 backBtn.onclick = () => go(-1);
 $("#startBtn").onclick = () => {
   $("#hero").classList.add("hidden"); $("#quiz").classList.remove("hidden"); document.body.classList.remove("on-hero");
-  const v=$("#heroVideo"); try{v.pause()}catch(e){}
+  try{ heroPlayer && heroPlayer.pause(); }catch(e){}
   trackCustom("QuizStart"); cur=0; render();
 };
-/* esconde o poster quando o vídeo começar */
-$("#heroVideo").addEventListener("playing",()=>{ const p=document.querySelector("#hero .poster"); if(p) p.style.display="none"; });
+/* vídeo de fundo (Vimeo): a imagem de capa fica por cima até o vídeo começar a tocar */
+let heroPlayer = null;
+(function initHeroVideo(){
+  const hidePoster = () => { const p=document.querySelector("#hero .poster"); if(p) p.classList.add("off"); };
+  if(window.Vimeo && Vimeo.Player){
+    heroPlayer = new Vimeo.Player($("#heroVideo"));
+    heroPlayer.setVolume(0).catch(()=>{});
+    heroPlayer.on("play", hidePoster);
+    heroPlayer.on("timeupdate", function f(d){ if(d.seconds>0.1){ hidePoster(); heroPlayer.off("timeupdate", f); } });
+  } else {
+    setTimeout(()=>{ if(window.Vimeo) initHeroVideo(); }, 1500);   // espera a API; sem ela, a capa continua
+  }
+})();
 })();
 </script>
 </body>
