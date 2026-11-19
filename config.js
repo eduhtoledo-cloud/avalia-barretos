@@ -3,9 +3,9 @@
    ===================================================================== */
 window.CONFIG = {
   marca: "Avalia Barretos",
-  whatsapp: "5517999999999",          // seu WhatsApp com DDI+DDD, só números
-  email: "contato@seudominio.com.br",
-  empresaRodape: "Avalia Barretos · CNPJ 00.000.000/0001-00 · Barretos/SP",
+  whatsapp: "5517992623594",          // seu WhatsApp com DDI+DDD, só números
+  email: "eduhtoledo@gmail.com",
+  empresaRodape: "Avalia Barretos · Barretos/SP",
   // preço de cada kit (R$). O "Economize X%" e o "cada placa sai por" são calculados sozinhos.
   // Links: cole o link "embed" de cada produto da GGcheckout
   // (formato https://ggcheckout.app/checkout/embed/XXXX — o mesmo do href do botão que a GG gera).
