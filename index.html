@@ -25,23 +25,21 @@ window.CONFIG = {
   whatsapp: "5517999999999",          // seu WhatsApp com DDI+DDD, só números
   email: "contato@seudominio.com.br",
   empresaRodape: "Avalia Barretos · CNPJ 00.000.000/0001-00 · Barretos/SP",
-  precoPlaca: 59,                     // preço de 1 placa
-  // desconto em % sobre (qtd x precoPlaca). O preço do kit é calculado sozinho.
+  // preço de cada kit (R$). O "Economize X%" e o "cada placa sai por" são calculados sozinhos.
   // Links: cole o link "embed" de cada produto da GGcheckout
   // (formato https://ggcheckout.app/checkout/embed/XXXX — o mesmo do href do botão que a GG gera).
   // Um link por cor: { azul: "...", preta: "..." }. Se usar o mesmo produto para as duas cores, repita o link.
   kits: [
-    { qtd: 1,  desconto: 0,  badge: "",               desc: "Ideal para começar",
+    { qtd: 1,  preco: 59.00,  badge: "",               desc: "Ideal para começar",
       link: { azul: "https://ggcheckout.app/checkout/embed/576J065gGrRNBPlPydrrzY", preta: "https://ggcheckout.app/checkout/embed/576J065gGrRNBPlPydrrzY" } },
-    { qtd: 3,  desconto: 15, badge: "",               desc: "Para pequenos negócios",
+    { qtd: 3,  preco: 139.90, badge: "",               desc: "Para pequenos negócios",
       link: { azul: "COLE_O_LINK_KIT3_AZUL",  preta: "COLE_O_LINK_KIT3_PRETA" } },
-    { qtd: 5,  desconto: 20, badge: "Mais escolhido", desc: "Para negócios em crescimento",
+    { qtd: 5,  preco: 229.90, badge: "Mais escolhido", desc: "Para negócios em crescimento",
       link: { azul: "COLE_O_LINK_KIT5_AZUL",  preta: "COLE_O_LINK_KIT5_PRETA" } },
-    { qtd: 10, desconto: 30, badge: "Melhor custo",   desc: "Para negócios movimentados",
+    { qtd: 10, preco: 399.90, badge: "Melhor custo",   desc: "Para negócios movimentados",
       link: { azul: "COLE_O_LINK_KIT10_AZUL", preta: "COLE_O_LINK_KIT10_PRETA" } }
   ]
 };
-CONFIG.kits.forEach(k => k.preco = Math.round(k.qtd * CONFIG.precoPlaca * (1 - k.desconto/100) * 100) / 100);
 </script>
 
 <style>
@@ -438,7 +436,7 @@ const STEPS = [
       const unit1 = C.kits[0].preco/C.kits[0].qtd; const img = `img/google-${A.modelo||"azul"}.webp`;
       return `<h1 class="q">${nome()}, escolha seu kit:</h1>
       <p class="qs">Quanto mais placas, menor o preço de cada uma. Espalhe pelo balcão, mesas e caixa.</p>
-      <div class="kits">${C.kits.map(k=>{ const un = k.preco/k.qtd; const eco = k.desconto ?? Math.round((1-un/unit1)*100);
+      <div class="kits">${C.kits.map(k=>{ const un = k.preco/k.qtd; const eco = Math.round((1-un/unit1)*100);
         const imgs = Array.from({length:Math.min(3,k.qtd)},()=>`<img src="${img}" alt="">`).join("");
         const badge = k.qtd===rec ? `<span class="badge rec">Recomendado para você</span>` : k.badge ? `<span class="badge">${esc(k.badge)}</span>` : "";
         return `<button class="kit ${A.kit===k.qtd?"sel":""}" data-kit="${k.qtd}">${badge}
