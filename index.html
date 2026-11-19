@@ -129,9 +129,13 @@ p.qs{margin-top:8px;color:var(--muted);font-size:15px;line-height:1.5}
 .big p{margin-top:10px;color:var(--body);font-size:15px;line-height:1.55}
 .sep{width:40px;height:2px;border-radius:2px;background:var(--line);margin:28px auto}
 .pill{display:inline-block;background:var(--brand);color:#fff;font-weight:700;font-size:13px;padding:7px 14px;border-radius:999px}
-.gal{margin:18px -20px 0;padding:0 20px 6px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
-.gal::-webkit-scrollbar{display:none}
-.gal img{width:62%;max-width:240px;flex:none;aspect-ratio:1;object-fit:cover;border-radius:14px;scroll-snap-align:start}
+/* carrossel automático infinito: a lista é duplicada e desliza -50% em loop */
+.gal{margin:18px -20px 0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.gal-track{display:flex;width:max-content;animation:galroll 32s linear infinite}
+.gal:hover .gal-track,.gal.paused .gal-track{animation-play-state:paused}
+.gal img{width:210px;height:210px;flex:none;object-fit:cover;border-radius:14px;margin-right:10px}
+@keyframes galroll{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.gal{overflow-x:auto}.gal-track{animation:none}}
 .steps3{margin-top:18px;display:grid;gap:10px}
 .s3{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
 .s3 b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:14px}
@@ -349,7 +353,10 @@ const STEPS = [
       </div>
       <div class="sep"></div>
       <h2 style="font-size:21px;font-weight:800;letter-spacing:-.02em">Placas em uso nos negócios</h2>
-      <div class="gal">${["revenda-barbeiro","old-black-4","uso-03","uso-06","uso-10","uso-07","uso-05"].map(f=>`<img loading="lazy" src="img/${f}.webp" alt="Placa de avaliação em uso">`).join("")}</div>`
+      <div class="gal" id="gal"><div class="gal-track">${(f=>[...f,...f])(["revenda-barbeiro","old-black-4","uso-03","uso-06","uso-10","uso-07","uso-05"]).map((f,i)=>`<img src="img/${f}.webp" alt="${i<7?"Placa de avaliação em uso":""}" ${i>=7?'aria-hidden="true"':""}>`).join("")}</div></div>`,
+    bind(){ const g=$("#gal"); if(!g) return;   // pausa enquanto a pessoa segura o dedo na foto
+      g.addEventListener("touchstart",()=>g.classList.add("paused"),{passive:true});
+      ["touchend","touchcancel"].forEach(ev=>g.addEventListener(ev,()=>g.classList.remove("paused"))); }
   },
   { id:"avaliacoes", key:"avaliacoes", valid:()=>A.avaliacoes!=null,
     html:()=>`<h1 class="q">Hoje, quantas avaliações <em>${nome()}</em> tem no Google?</h1>
