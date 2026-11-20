@@ -6,6 +6,18 @@
 <title>Avalia Barretos — Placa NFC de Avaliação Google</title>
 <meta name="description" content="Placa NFC de avaliação no Google. O cliente aproxima o celular e a página de avaliação do seu negócio abre na hora. Sem mensalidade.">
 <meta name="theme-color" content="#0B0F19">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Avalia Barretos">
+<meta property="og:title" content="Avalia Barretos — Placa NFC de Avaliação no Google">
+<meta property="og:description" content="Aproximou. Clicou. Avaliou. Placa NFC que abre a avaliação do seu negócio no Google. Sem mensalidade.">
+<meta property="og:image" content="https://eduhtoledo-cloud.github.io/avalia-barretos/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://eduhtoledo-cloud.github.io/avalia-barretos/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -56,7 +68,8 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 
 .hero-wrap{flex:1;display:flex;flex-direction:column;width:100%;max-width:1180px;margin:0 auto;padding:0 20px}
 .hero-top{display:flex;justify-content:space-between;align-items:center;padding:16px 0}
-.logo{font-weight:900;font-size:19px;letter-spacing:-.02em}
+.logo{font-weight:900;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo img{border-radius:7px;flex:none}
 .logo b{color:#6EA2FF}
 .rating{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
 #hero .rating{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -337,7 +350,7 @@ const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 
 /* ---------- marca / textos ---------- */
 const [m1,...mr] = C.marca.split(" ");
-document.querySelectorAll("[data-logo]").forEach(el=>el.innerHTML = esc(m1)+(mr.length?" <b>"+esc(mr.join(" "))+"</b>":""));
+document.querySelectorAll("[data-logo]").forEach(el=>el.innerHTML = `<img src="favicon.svg" alt="" width="26" height="26"><span>` + esc(m1)+(mr.length?" <b>"+esc(mr.join(" "))+"</b>":"") + `</span>`);
 $("#chipPreco").textContent = brl(Math.round(Math.min(...C.kits.map(k=>k.preco/k.qtd))*100)/100);   // menor preço por placa
 $("#heroFoot").textContent = C.marca;
 $("#waBtn").href = `https://wa.me/${C.whatsapp}?text=${encodeURIComponent("Olá! Tenho uma dúvida sobre a placa de avaliação.")}`;
