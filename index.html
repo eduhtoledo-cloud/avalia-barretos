@@ -32,7 +32,7 @@
 <script src="https://ggcheckout.app/embed/checkout.js?v=2" async></script>
 
 <!-- CONFIGURAÇÃO (preços, links, WhatsApp): edite o arquivo config.js e aumente o ?v= aqui e no obrigado.html -->
-<script src="config.js?v=4"></script>
+<script src="config.js?v=5"></script>
 <script src="https://player.vimeo.com/api/player.js" async></script>
 
 <style>
@@ -445,7 +445,7 @@ async function buscarRanking(){
     if(lista.length < 3){ A.ranking = null; save(); return null; }
     lista.sort((a,b)=> b.count - a.count || b.rating - a.rating);
     const pos = lista.findIndex(x=>x.me) + 1;
-    A.ranking = { pos, total:lista.length, tipo:P.type, lista:lista.slice(0,20) }; save();
+    A.ranking = { pos, total:lista.length, tipo:P.type, lista }; save();
     return A.ranking;
   }catch(e){ A.ranking = null; save(); return null; }
 }
@@ -471,9 +471,14 @@ async function escolherPlace(id){
   }catch(e){ if(msg) msg.textContent = "Não conseguimos carregar essa empresa. Tente outra vez ou digite os dados."; }
 }
 
+function rankingValido(){
+  const R = A.ranking;
+  return !!(A.fromGoogle && R && Array.isArray(R.lista) && R.pos >= 1 && R.lista[R.pos-1] && R.lista[0] && R.tipo);
+}
 function rankingHTML(){
-  const R = A.ranking; if(!A.fromGoogle || !R) return "";
-  const L = R.lista, me = L[R.pos-1];
+  if(!rankingValido()) return "";
+  const R = A.ranking;
+  const L = R.lista, me = L[R.pos-1]; if(!me || !L[0]) return "";
   const mostrar = new Set([0,1,2, R.pos-2, R.pos-1].filter(i=>i>=0 && i<L.length));
   let ant = -1, rows = "";
   [...mostrar].sort((a,b)=>a-b).forEach(i=>{
@@ -570,7 +575,7 @@ const STEPS = [
   },
   { id:"meta", key:"meta", valid:()=>A.meta!=null,
     html:()=>{
-      const R = A.ranking, atual = A.avaliacoes ?? 0;
+      const R = rankingValido() ? A.ranking : null, atual = A.avaliacoes ?? 0;
       if(R && R.pos > 1){
         const L = R.lista, alvo = [];
         const acima = L[R.pos-2]; alvo.push({ v:acima.count+1, t:`<span>Passar o ${R.pos-1}º lugar <small>${esc(acima.name)} · ${acima.count.toLocaleString("pt-BR")} avaliações</small></span>` });
@@ -606,7 +611,10 @@ const STEPS = [
       items.forEach((el,i)=>setTimeout(()=>el.classList.add("done"),500+i*600));
       const minimo = new Promise(r=>setTimeout(r, 500+items.length*600+400));
       const rank = rankingPromise ? Promise.race([rankingPromise, new Promise(r=>setTimeout(r,6000))]) : Promise.resolve();
-      Promise.all([minimo, rank]).then(()=>{ if(STEPS[cur].id==="calc") go(1); }); }
+      let foi = false;
+      const seguir = () => { if(foi) return; foi = true; if(STEPS[cur].id==="calc"){ try{ go(1); }catch(e){ console.error(e); } } };
+      Promise.all([minimo, rank]).then(seguir, seguir);
+      setTimeout(seguir, 10000); }
   },
   { id:"projecao", valid:()=>true,
     html:()=>{ const p = projecao(); const nota = A.nota||0;
@@ -682,7 +690,14 @@ function refreshNext(){
 }
 function render(){
   const s = STEPS[cur];
-  stage.innerHTML = `<div class="step">${s.html()}</div>`;
+  let html;
+  try{ html = s.html(); }
+  catch(e){
+    console.error("Erro na etapa", s.id, e);
+    if(s.id === "projecao" || s.id === "meta"){ A.ranking = null; save(); try{ html = s.html(); }catch(e2){ html = null; } }
+    if(html == null) html = `<h1 class="q">Quase lá!</h1><p class="qs">Toque em Próximo para continuar.</p>`;
+  }
+  stage.innerHTML = `<div class="step">${html}</div>`;
   $("#progFill").style.width = Math.round((cur+1)/STEPS.length*100) + "%";
   backBtn.disabled = cur===0;
   stage.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
@@ -691,7 +706,7 @@ function render(){
     refreshNext();
     setTimeout(()=>{ if(STEPS[cur].key===b.dataset.k) go(1); }, 280);   // avança sozinho
   });
-  s.bind && s.bind();
+  try{ s.bind && s.bind(); }catch(e){ console.error("Erro ao preparar a etapa", s.id, e); }
   refreshNext();
   window.scrollTo({top:0,behavior:"instant"});
 }
