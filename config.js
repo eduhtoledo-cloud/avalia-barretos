@@ -3,6 +3,8 @@
    ===================================================================== */
 window.CONFIG = {
   marca: "Avalia Barretos",
+  // Chave do Google (Places API New) — travada no Google Cloud para funcionar só em eduhtoledo-cloud.github.io e localhost:5191
+  googleApiKey: "AIzaSyD_GSEACTye_Z3K5qFyBCTcSoyuAsBbLi8",
   whatsapp: "5517992623594",          // seu WhatsApp com DDI+DDD, só números
   email: "eduhtoledo@gmail.com",
   empresaRodape: "Avalia Barretos · Barretos/SP",

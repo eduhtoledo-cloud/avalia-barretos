@@ -20,7 +20,7 @@
 <script src="https://ggcheckout.app/embed/checkout.js?v=2" async></script>
 
 <!-- CONFIGURAÇÃO (preços, links, WhatsApp): edite o arquivo config.js e aumente o ?v= aqui e no obrigado.html -->
-<script src="config.js?v=2"></script>
+<script src="config.js?v=3"></script>
 <script src="https://player.vimeo.com/api/player.js"></script>
 
 <style>
@@ -105,6 +105,32 @@ p.qs{margin-top:8px;color:var(--muted);font-size:15px;line-height:1.5}
 .next:hover{background:var(--brand-h)}
 .next:disabled{opacity:.4;box-shadow:none;cursor:not-allowed}
 .next.go{background:var(--ok);box-shadow:0 8px 24px rgba(15,157,88,.3)}
+
+/* busca no Google */
+.gsearch{position:relative}
+.gsearch .input{padding-left:44px}
+.gs-ic{position:absolute;left:15px;top:16px;font-size:17px;opacity:.6;pointer-events:none}
+.sugs{display:none;margin-top:8px;background:#fff;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+.sugs.open{display:block}
+.sug{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:13px 14px;border-bottom:1px solid var(--line)}
+.sug:last-child{border-bottom:0}
+.sug:hover{background:var(--brand-soft)}
+.sug-pin{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ok-soft);display:grid;place-items:center;font-size:14px}
+.sug b{display:block;font-size:15px;font-weight:700;color:var(--ink)}
+.sug small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+.gs-msg{margin-top:10px;font-size:13.5px;color:var(--muted)}
+.gs-msg:empty{display:none}
+.linkbtn{display:block;margin:16px auto 0;font-size:14px;font-weight:600;color:var(--brand);text-decoration:underline;text-underline-offset:4px}
+.placecard{margin-top:16px;background:#fff;border:2px solid var(--ok);border-radius:16px;overflow:hidden}
+.pc-top{display:flex;gap:12px;padding:16px;align-items:flex-start}
+.pc-ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;font-size:22px;font-weight:800}
+.pc-main h3{font-size:17px;font-weight:800;line-height:1.25}
+.pc-main small{color:var(--muted);font-size:13px}
+.pc-rate{margin-top:6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px}
+.pc-rate b{font-weight:800}
+.pc-rate span{color:var(--muted);font-size:13px}
+.pc-stars{color:var(--star);letter-spacing:1px}.pc-stars i{font-style:normal;color:#CBD5E1}
+.pc-info{background:var(--ok-soft);padding:12px 16px;display:grid;gap:6px;font-size:13.5px;color:#14532d;line-height:1.45}
 
 /* how it works */
 .big{text-align:center;margin-top:28px}
@@ -303,22 +329,101 @@ function kitRecomendado(){
   return qs.reduce((best,q)=> Math.abs(q-alvo) < Math.abs(best-alvo) ? q : best, qs[0]);
 }
 
+/* ---------- busca da empresa no Google (Places API New) ---------- */
+const novoToken = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
+let gToken = novoToken(), gReq = 0;
+function stars(r){ const n = Math.round(r); return `<span class="pc-stars">${"★".repeat(n)}<i>${"★".repeat(5-n)}</i></span>`; }
+function limparPlace(){ delete A.place; A.fromGoogle = false; A.avaliacoes = null; A.nota = null; A.googleLink = ""; A.nome = ""; A.cidade = ""; A.busca = ""; save(); }
+async function buscarGoogle(texto){
+  const box = $("#sugs"), msg = $("#gsMsg"); if(!box) return;
+  texto = (texto||"").trim();
+  if(texto.length < 3){ box.innerHTML = ""; box.classList.remove("open"); return; }
+  const my = ++gReq;
+  try{
+    const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+      method:"POST", headers:{ "Content-Type":"application/json", "X-Goog-Api-Key": C.googleApiKey },
+      body: JSON.stringify({ input:texto, sessionToken:gToken, languageCode:"pt-BR", includedRegionCodes:["br"] })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d = await r.json(); if(my !== gReq) return;
+    const list = (d.suggestions||[]).map(s=>s.placePrediction).filter(Boolean).slice(0,5);
+    msg.textContent = list.length ? "" : "Nenhuma empresa encontrada. Confira o nome ou toque em \"Não encontrei minha empresa\".";
+    box.innerHTML = list.map(p=>`<button type="button" class="sug" data-id="${esc(p.placeId)}"><span class="sug-pin">📍</span><span><b>${esc(p.structuredFormat?.mainText?.text || p.text?.text || "")}</b><small>${esc(p.structuredFormat?.secondaryText?.text || "")}</small></span></button>`).join("");
+    box.classList.toggle("open", list.length>0);
+    box.querySelectorAll(".sug").forEach(b=>b.onclick=()=>escolherPlace(b.dataset.id));
+  }catch(e){
+    if(my !== gReq) return;
+    box.innerHTML = ""; box.classList.remove("open");
+    msg.textContent = "Não conseguimos buscar no Google agora. Toque em \"Não encontrei minha empresa\" e digite os dados.";
+  }
+}
+async function escolherPlace(id){
+  const msg = $("#gsMsg"); if(msg) msg.textContent = "Carregando dados da empresa...";
+  try{
+    const r = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}?languageCode=pt-BR&sessionToken=${encodeURIComponent(gToken)}`, {
+      headers:{ "X-Goog-Api-Key": C.googleApiKey,
+        "X-Goog-FieldMask": "id,displayName,formattedAddress,addressComponents,rating,userRatingCount,nationalPhoneNumber,googleMapsUri,primaryTypeDisplayName" }
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d = await r.json(); gToken = novoToken();
+    const comp = d.addressComponents || [];
+    const cidade = (comp.find(c=>(c.types||[]).includes("administrative_area_level_2")) || comp.find(c=>(c.types||[]).includes("locality")) || {}).longText || "";
+    A.place = { id:d.id, name:d.displayName?.text||"", address:d.formattedAddress||"", rating:d.rating||0, count:d.userRatingCount||0,
+                phone:d.nationalPhoneNumber||"", maps:(d.googleMapsUri||"").split("&g_mp=")[0], type:d.primaryTypeDisplayName?.text||"" };
+    A.nome = A.place.name; A.cidade = cidade; A.avaliacoes = A.place.count; A.nota = A.place.rating;
+    A.googleLink = A.place.maps; A.fromGoogle = true; A.manual = false; save();
+    trackCustom("EmpresaEncontrada");
+    render();
+  }catch(e){ if(msg) msg.textContent = "Não conseguimos carregar essa empresa. Tente outra vez ou digite os dados."; }
+}
+
 /* ---------- passos ---------- */
 const optList = (key,list,cls="") => `<div class="opts">${list.map(o=>{
   const v = typeof o==="object"?o.v:o, t = typeof o==="object"?o.t:(o.toLocaleString("pt-BR")+" avaliações");
   return `<button class="opt ${A[key]===v?"sel":""}" data-k="${key}" data-v="${v}">${t}</button>`;}).join("")}</div>`;
 
 const STEPS = [
-  { id:"nome", valid:()=> (A.nome||"").trim().length>1 && (A.cidade||"").trim().length>1,
-    html:()=>`
+  { id:"nome", valid:()=> A.place ? true : (A.manual && (A.nome||"").trim().length>1 && (A.cidade||"").trim().length>1),
+    html:()=>{
+      const head = `
       <div class="hero-card"><img src="img/card-ativa.webp" alt="Cliente aproximando o celular da placa"></div>
-      <h1 class="q" style="margin-top:20px">Vamos iniciar a configuração da sua <em>placa de avaliação</em>.</h1>
-      <p class="qs">Escreva o nome da sua empresa exatamente como está no Google.</p>
-      <div class="field"><label for="fNome">Nome da empresa</label>
-        <input class="input" id="fNome" autocomplete="organization" placeholder="Ex.: Barbearia do João" value="${esc(A.nome||"")}"></div>
-      <div class="field"><label for="fCidade">Cidade</label>
-        <input class="input" id="fCidade" autocomplete="address-level2" placeholder="Ex.: Barretos" value="${esc(A.cidade||"")}"></div>`,
-    bind(){ ["fNome","fCidade"].forEach(id=>{ const el=$("#"+id); el.addEventListener("input",()=>{A[id==="fNome"?"nome":"cidade"]=el.value; save(); refreshNext();}); el.addEventListener("keydown",e=>{if(e.key==="Enter"&&STEPS[cur].valid()) go(1);}); }); }
+      <h1 class="q" style="margin-top:20px">Vamos iniciar a configuração da sua <em>placa de avaliação</em>.</h1>`;
+      if(A.place){ const P = A.place;
+        return head + `<p class="qs">Confira se é a sua empresa:</p>
+        <div class="placecard">
+          <div class="pc-top"><div class="pc-ic">✓</div><div class="pc-main"><h3>${esc(P.name)}</h3><small>${esc(P.type||"")}</small>
+            <div class="pc-rate"><b>${P.rating?String(P.rating).replace(".",","):"0"}</b> ${stars(P.rating||0)} <span>(${(P.count||0).toLocaleString("pt-BR")} avaliações)</span></div></div></div>
+          <div class="pc-info"><div>📍 ${esc(P.address||"")}</div>${P.phone?`<div>📞 ${esc(P.phone)}</div>`:""}</div>
+        </div>
+        <button class="linkbtn" id="trocar" type="button">✎ Não é essa? Trocar empresa</button>`; }
+      if(A.manual || !C.googleApiKey){
+        return head + `<p class="qs">Escreva o nome da sua empresa exatamente como está no Google.</p>
+        <div class="field"><label for="fNome">Nome da empresa</label>
+          <input class="input" id="fNome" autocomplete="organization" placeholder="Ex.: Barbearia do João" value="${esc(A.nome||"")}"></div>
+        <div class="field"><label for="fCidade">Cidade</label>
+          <input class="input" id="fCidade" autocomplete="address-level2" placeholder="Ex.: Barretos" value="${esc(A.cidade||"")}"></div>
+        ${C.googleApiKey?`<button class="linkbtn" id="voltarBusca" type="button">🔎 Buscar minha empresa no Google</button>`:""}`; }
+      return head + `<p class="qs">Qual é o nome da sua empresa no Google? Digite e escolha na lista.</p>
+        <div class="field gsearch">
+          <span class="gs-ic">🔎</span>
+          <input class="input" id="gq" autocomplete="off" placeholder="Digite o nome do seu negócio" value="${esc(A.busca||"")}">
+          <div class="sugs" id="sugs"></div>
+        </div>
+        <p class="gs-msg" id="gsMsg"></p>
+        <button class="linkbtn" id="manualBtn" type="button">Não encontrei minha empresa</button>`;
+    },
+    bind(){
+      if(A.place){ $("#trocar").onclick = () => { limparPlace(); render(); }; return; }
+      if(A.manual || !C.googleApiKey){
+        ["fNome","fCidade"].forEach(id=>{ const el=$("#"+id); el.addEventListener("input",()=>{A[id==="fNome"?"nome":"cidade"]=el.value; save(); refreshNext();}); el.addEventListener("keydown",e=>{if(e.key==="Enter"&&STEPS[cur].valid()) go(1);}); });
+        const vb=$("#voltarBusca"); if(vb) vb.onclick=()=>{ A.manual=false; save(); render(); };
+        return;
+      }
+      $("#manualBtn").onclick = () => { A.manual = true; save(); render(); };
+      const q = $("#gq"); let t = null;
+      q.addEventListener("input", () => { A.busca = q.value; clearTimeout(t); t = setTimeout(()=>buscarGoogle(q.value), 300); });
+      if(q.value.trim().length >= 3) buscarGoogle(q.value);
+    }
   },
   { id:"como", valid:()=>true,
     html:()=>`
@@ -343,16 +448,16 @@ const STEPS = [
       g.addEventListener("touchstart",()=>g.classList.add("paused"),{passive:true});
       ["touchend","touchcancel"].forEach(ev=>g.addEventListener(ev,()=>g.classList.remove("paused"))); }
   },
-  { id:"avaliacoes", key:"avaliacoes", valid:()=>A.avaliacoes!=null,
+  { id:"avaliacoes", key:"avaliacoes", skip:()=>!!A.fromGoogle, valid:()=>A.avaliacoes!=null,
     html:()=>`<h1 class="q">Hoje, quantas avaliações <em>${nome()}</em> tem no Google?</h1>
       <p class="qs">Se não souber o número exato, escolha o mais próximo.</p>${optList("avaliacoes",OPT.avaliacoes)}`
   },
-  { id:"nota", key:"nota", valid:()=>A.nota!=null,
+  { id:"nota", key:"nota", skip:()=>!!A.fromGoogle, valid:()=>A.nota!=null,
     html:()=>`<h1 class="q">E qual é a nota de <em>${nome()}</em> no Google hoje?</h1>
       <p class="qs">A nota aparece ao lado das estrelas quando alguém pesquisa sua empresa.</p>${optList("nota",OPT.nota)}`
   },
   { id:"meta", key:"meta", valid:()=>A.meta!=null,
-    html:()=>{ const metas = OPT.meta.filter(m=>m > (A.avaliacoes??0)).slice(0,4);
+    html:()=>{ let metas = OPT.meta.filter(m=>m > (A.avaliacoes??0)).slice(0,4); if(metas.length<3) metas = [2,3,5].map(x=>Math.ceil((A.avaliacoes||100)*x/100)*100);
       if(A.meta!=null && !metas.includes(A.meta)) A.meta = null;
       return `<h1 class="q">Quantas avaliações você gostaria de alcançar?</h1>
       <p class="qs">Negócios com mais avaliações aparecem antes no Google Maps.</p>${optList("meta",metas)}`; }
@@ -387,11 +492,11 @@ const STEPS = [
       return `<h1 class="q">Sua projeção de crescimento</h1>
       <p class="qs">Mais avaliações geram mais visibilidade, mais confiança, mais clientes e mais dinheiro.</p>
       <div class="pcard">
-        <div class="biz"><div class="biz-ic">📍</div><div><h3>${nome()}</h3><small>${esc(A.cidade||"")}${nota?` · ${String(nota).replace(".",",")} ★`:""}</small></div></div>
+        <div class="biz"><div class="biz-ic">📍</div><div><h3>${nome()}</h3><small>${esc(A.fromGoogle&&A.place ? A.place.address : (A.cidade||""))}${nota?` · ${String(nota).replace(".",",")} ★`:""}</small></div></div>
         ${diag}
         <div class="lbl">Seus números</div>
         <div class="nums">
-          <div class="num"><small>Avaliações hoje</small><b>${p.atual===0?"0":"~"+p.atual}</b></div>
+          <div class="num"><small>Avaliações hoje</small><b>${A.fromGoogle||p.atual===0 ? p.atual.toLocaleString("pt-BR") : "~"+p.atual}</b></div>
           <div class="num"><small>Sua meta</small><b>${p.meta.toLocaleString("pt-BR")}</b></div>
           <div class="num"><small>Faltam para a meta</small><b>${p.faltam.toLocaleString("pt-BR")}</b></div>
           <div class="num hl"><small>Com a placa, por mês</small><b>+${p.porMes}</b></div>
@@ -464,7 +569,7 @@ function render(){
 }
 function go(d){
   let n = cur + d;
-  if(d<0 && STEPS[n] && STEPS[n].auto) n += d;      // pula a tela de cálculo ao voltar
+  while(STEPS[n] && ((d<0 && STEPS[n].auto) || (STEPS[n].skip && STEPS[n].skip()))) n += d;   // pula cálculo ao voltar e perguntas que o Google já respondeu
   if(n<0 || n>=STEPS.length) return;
   cur = n; render();
   try{ history.replaceState(null,"","#"+STEPS[cur].id); }catch(e){}
