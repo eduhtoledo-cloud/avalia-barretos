@@ -21,7 +21,7 @@
 
 <!-- CONFIGURAÇÃO (preços, links, WhatsApp): edite o arquivo config.js e aumente o ?v= aqui e no obrigado.html -->
 <script src="config.js?v=3"></script>
-<script src="https://player.vimeo.com/api/player.js"></script>
+<script src="https://player.vimeo.com/api/player.js" async></script>
 
 <style>
 :root{
@@ -38,36 +38,65 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .hidden{display:none!important}
 
 /* ===================== HERO ===================== */
-#hero{position:relative;min-height:100svh;background:var(--dark);color:#fff;display:flex;flex-direction:column;overflow:hidden}
-#hero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity .6s}
+#hero{position:relative;min-height:100svh;background:var(--dark);color:#fff;display:flex;flex-direction:column;overflow:hidden;isolation:isolate}
+#hero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.7;transition:opacity .8s;z-index:-2}
 #hero .poster.off{opacity:0}
 /* vídeo do Vimeo como fundo: sempre cobre a tela inteira (como object-fit:cover), sem som e sem cliques */
-.bgvid{position:absolute;inset:0;overflow:hidden;opacity:.55;pointer-events:none}
+.bgvid{position:absolute;inset:0;overflow:hidden;opacity:.75;pointer-events:none;z-index:-3}
 .bgvid iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:0;
   width:max(100%, calc(100svh * 16 / 9));height:max(100%, calc(100vw * 9 / 16));min-height:100%}
-#hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,15,25,.6) 0%,rgba(11,15,25,.2) 25%,rgba(11,15,25,.88) 50%,#0B0F19 72%)}
-.ticker{position:relative;z-index:2;background:var(--brand);overflow:hidden;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:8px 0}
+/* escurece só onde tem texto: topo (cabeçalho) e metade de baixo (conteúdo) */
+#hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(11,15,25,.75) 0%,rgba(11,15,25,.05) 22%,rgba(11,15,25,.05) 34%,rgba(11,15,25,.82) 52%,#0B0F19 70%)}
+
+.ticker{position:relative;background:var(--brand);overflow:hidden;white-space:nowrap;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 0}
 .ticker-track{display:inline-flex;gap:28px;animation:tick 26s linear infinite;padding-left:28px}
 .ticker-track span::before{content:"★";color:var(--star);margin-right:10px}
 @keyframes tick{to{transform:translateX(-50%)}}
-.hero-top{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:16px 20px}
+
+.hero-wrap{flex:1;display:flex;flex-direction:column;width:100%;max-width:1180px;margin:0 auto;padding:0 20px}
+.hero-top{display:flex;justify-content:space-between;align-items:center;padding:16px 0}
 .logo{font-weight:900;font-size:19px;letter-spacing:-.02em}
 .logo b{color:#6EA2FF}
 .rating{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
-.stars{display:inline-flex;gap:1px;color:var(--star);font-size:13px;letter-spacing:1px}
-.hero-body{position:relative;z-index:2;margin-top:auto;padding:0 20px 28px;max-width:560px}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
-.chip{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px)}
-.chip.hl{background:var(--star);color:#1a1300;border-color:transparent}
-.hero-title{font-size:clamp(44px,12vw,72px);font-weight:900;line-height:.98;letter-spacing:-.04em}
+#hero .rating{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.stars{display:inline-flex;gap:1px;color:var(--star);font-size:12px;letter-spacing:1px}
+
+.hero-body{margin-top:auto;padding:24px 0 8px;max-width:540px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.eyebrow i{width:8px;height:8px;border-radius:50%;background:#34D399;box-shadow:0 0 0 4px rgba(52,211,153,.2);animation:blink 2s infinite}
+@keyframes blink{50%{opacity:.4}}
+.hero-title{margin-top:16px;font-size:clamp(46px,12.5vw,80px);font-weight:900;line-height:.95;letter-spacing:-.045em}
 .hero-title span{display:block}
-.hero-title span:nth-child(3){color:#6EA2FF}
-.hero-sub{margin-top:16px;font-size:15.5px;line-height:1.5;color:rgba(255,255,255,.82);max-width:440px}
-.cta-hero{margin-top:24px;width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;background:#fff;color:var(--ink);font-weight:800;font-size:15px;letter-spacing:.02em;text-transform:uppercase;padding:8px 8px 8px 24px;border-radius:999px;box-shadow:0 10px 30px rgba(26,92,229,.35);animation:pulse 2.4s infinite}
-.cta-hero i{width:44px;height:44px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-style:normal;font-size:20px}
+.hero-title span:nth-child(3){background:linear-gradient(90deg,#6EA2FF,#A5C4FF);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.06em}
+.hero-sub{margin-top:16px;font-size:16px;line-height:1.55;color:rgba(255,255,255,.8);max-width:470px}
+.hero-sub strong{color:#fff;font-weight:700}
+
+.perks{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;max-width:470px}
+.perk{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.92);line-height:1.25}
+.perk b{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(110,162,255,.16);border:1px solid rgba(110,162,255,.3);font-size:14px}
+
+.cta-hero{margin-top:26px;width:100%;max-width:470px;display:flex;align-items:center;justify-content:space-between;background:#fff;color:var(--ink);font-weight:800;font-size:15.5px;letter-spacing:.02em;text-transform:uppercase;padding:8px 8px 8px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(26,92,229,.4);animation:pulse 2.4s infinite;transition:transform .15s}
+.cta-hero:hover{transform:translateY(-1px)}
+.cta-hero:active{transform:scale(.98)}
+.cta-hero i{width:46px;height:46px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-style:normal;font-size:20px}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(110,162,255,.55)}50%{box-shadow:0 0 0 12px rgba(110,162,255,0)}}
-.hero-foot{position:relative;z-index:2;padding:14px 20px calc(16px + env(safe-area-inset-bottom));font-size:11px;color:rgba(255,255,255,.5);text-align:center;line-height:1.6}
+.price-line{margin-top:14px;max-width:470px;display:flex;justify-content:flex-start;padding-left:4px;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:rgba(255,255,255,.72)}
+.price-line b{color:var(--star);font-weight:800}
+
+.hero-foot{padding:18px 76px calc(18px + env(safe-area-inset-bottom)) 0;font-size:11px;color:rgba(255,255,255,.45);line-height:1.6}
 .hero-foot a{color:inherit}
+
+@media (min-width:900px){
+  #hero::after{background:linear-gradient(90deg,rgba(11,15,25,.94) 0%,rgba(11,15,25,.82) 38%,rgba(11,15,25,.25) 70%,rgba(11,15,25,.1) 100%),linear-gradient(180deg,rgba(11,15,25,.5) 0%,transparent 20%,transparent 80%,rgba(11,15,25,.6) 100%)}
+  .hero-wrap{padding:0 48px}
+  .hero-top{padding:22px 0}
+  .hero-body{margin:auto 0;padding:12px 0}
+  .hero-title{font-size:clamp(52px,9vh,84px)}
+  .perks{margin-top:18px}
+  .cta-hero{margin-top:22px}
+  .price-line{justify-content:flex-start}
+}
 
 /* ===================== QUIZ ===================== */
 #quiz{min-height:100svh;display:flex;flex-direction:column}
@@ -214,10 +243,6 @@ p.qs{margin-top:8px;color:var(--muted);font-size:15px;line-height:1.5}
 .wa svg{width:28px;height:28px;fill:#fff}
 body.on-hero .wa{bottom:20px}
 
-@media (min-width:768px){
-  .hero-body{padding:0 48px 56px}
-  .hero-top{padding:20px 48px}
-}
 </style>
 </head>
 <body class="on-hero">
@@ -228,29 +253,32 @@ body.on-hero .wa{bottom:20px}
     <iframe id="heroVideo" src="https://player.vimeo.com/video/1248335150?background=1&amp;autoplay=1&amp;loop=1&amp;muted=1&amp;autopause=0&amp;playsinline=1&amp;dnt=1"
       allow="autoplay; fullscreen; picture-in-picture" tabindex="-1" title="Vídeo de fundo"></iframe>
   </div>
-  <img class="poster" src="img/placa-black-capa.webp" alt="">
+  <img class="poster" src="img/placa-black-capa.webp" alt="" fetchpriority="high" decoding="async">
 
   <div class="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></div>
 
-  <div class="hero-top">
-    <div class="logo" data-logo></div>
-    <div class="rating"><span class="stars">★★★★★</span> Avaliação 5.0</div>
-  </div>
+  <div class="hero-wrap">
+    <header class="hero-top">
+      <div class="logo" data-logo></div>
+      <div class="rating"><span class="stars">★★★★★</span> 5.0</div>
+    </header>
 
-  <div class="hero-body">
-    <div class="chips">
-      <span class="chip">Tecnologia NFC</span>
-      <span class="chip">Sem mensalidade</span>
-      <span class="chip">iPhone e Android</span>
-      <span class="chip hl" id="chipPreco">A partir de R$ 59</span>
-      <span class="chip">Vitalício</span>
+    <div class="hero-body">
+      <span class="eyebrow"><i></i> Placa NFC + QR Code para o Google</span>
+      <h1 class="hero-title"><span>Aproximou.</span><span>Clicou.</span><span>Avaliou.</span></h1>
+      <p class="hero-sub">O cliente aproxima o celular da placa e a página de avaliação do seu negócio no Google <strong>abre em 3 segundos</strong>. Já chega configurada, é só colocar no balcão.</p>
+      <div class="perks">
+        <div class="perk"><b>💳</b>Sem mensalidade</div>
+        <div class="perk"><b>📱</b>iPhone e Android</div>
+        <div class="perk"><b>⚙️</b>Já configurada</div>
+        <div class="perk"><b>♾️</b>Dura para sempre</div>
+      </div>
+      <button class="cta-hero" id="startBtn">Iniciar configuração <i>→</i></button>
+      <div class="price-line"><span>A partir de <b id="chipPreco">R$ 39,99</b> por placa</span><span>🔒 Pagamento seguro</span></div>
     </div>
-    <h1 class="hero-title"><span>Aproximou.</span><span>Clicou.</span><span>Avaliou.</span></h1>
-    <p class="hero-sub">Placa com tecnologia de aproximação para o Google. Já chega configurada com a página de avaliações do seu negócio: o cliente aproxima o celular e a avaliação abre na hora.</p>
-    <button class="cta-hero" id="startBtn">Iniciar configuração <i>→</i></button>
-  </div>
 
-  <div class="hero-foot" id="heroFoot"></div>
+    <footer class="hero-foot" id="heroFoot"></footer>
+  </div>
 </section>
 
 <!-- ===================== QUIZ ===================== -->
@@ -283,7 +311,7 @@ const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 /* ---------- marca / textos ---------- */
 const [m1,...mr] = C.marca.split(" ");
 document.querySelectorAll("[data-logo]").forEach(el=>el.innerHTML = esc(m1)+(mr.length?" <b>"+esc(mr.join(" "))+"</b>":""));
-$("#chipPreco").textContent = "A partir de " + brl(Math.round(Math.min(...C.kits.map(k=>k.preco/k.qtd))*100)/100);   // menor preço por placa
+$("#chipPreco").textContent = brl(Math.round(Math.min(...C.kits.map(k=>k.preco/k.qtd))*100)/100);   // menor preço por placa
 $("#heroFoot").innerHTML = `<a href="mailto:${esc(C.email)}">${esc(C.email)}</a> · <a href="https://wa.me/${C.whatsapp}" target="_blank" rel="noopener">WhatsApp</a><br>${esc(C.empresaRodape)}`;
 $("#waBtn").href = `https://wa.me/${C.whatsapp}?text=${encodeURIComponent("Olá! Tenho uma dúvida sobre a placa de avaliação.")}`;
 const tick = ["Sem mensalidade","Funciona em iPhone e Android","Já chega configurada","Pagamento único","Oferta de lançamento"];
@@ -609,7 +637,8 @@ let heroPlayer = null;
     heroPlayer.on("play", hidePoster);
     heroPlayer.on("timeupdate", function f(d){ if(d.seconds>0.1){ hidePoster(); heroPlayer.off("timeupdate", f); } });
   } else {
-    setTimeout(()=>{ if(window.Vimeo) initHeroVideo(); }, 1500);   // espera a API; sem ela, a capa continua
+    initHeroVideo.tries = (initHeroVideo.tries||0) + 1;
+    if(initHeroVideo.tries < 20) setTimeout(initHeroVideo, 400);   // espera a API carregar; sem ela, a capa continua
   }
 })();
 })();
