@@ -2,12 +2,12 @@
    CONFIGURAÇÃO DO FUNIL — usada pelo index.html e pelo obrigado.html
    ===================================================================== */
 window.CONFIG = {
-  marca: "Avalia Barretos",
+  marca: "Avalia Brasil",
   // Chave do Google (Places API New) — travada no Google Cloud para funcionar só em eduhtoledo-cloud.github.io e localhost:5191
   googleApiKey: "AIzaSyD_GSEACTye_Z3K5qFyBCTcSoyuAsBbLi8",
   whatsapp: "5517992623594",          // seu WhatsApp com DDI+DDD, só números
   email: "eduhtoledo@gmail.com",
-  empresaRodape: "Avalia Barretos · Barretos/SP",
+  empresaRodape: "Avalia Brasil",
   // preço de cada kit (R$). O "Economize X%" e o "cada placa sai por" são calculados sozinhos.
   // Links: cole o link "embed" de cada produto da GGcheckout
   // (formato https://ggcheckout.app/checkout/embed/XXXX — o mesmo do href do botão que a GG gera).

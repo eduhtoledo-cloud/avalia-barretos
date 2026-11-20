@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Avalia Barretos — Placa NFC de Avaliação Google</title>
+<title>Avalia Brasil — Placa NFC de Avaliação Google</title>
 <meta name="description" content="Placa NFC de avaliação no Google. O cliente aproxima o celular e a página de avaliação do seu negócio abre na hora. Sem mensalidade.">
 <meta name="theme-color" content="#0B0F19">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Avalia Barretos">
-<meta property="og:title" content="Avalia Barretos — Placa NFC de Avaliação no Google">
+<meta property="og:site_name" content="Avalia Brasil">
+<meta property="og:title" content="Avalia Brasil — Placa NFC de Avaliação no Google">
 <meta property="og:description" content="Aproximou. Clicou. Avaliou. Placa NFC que abre a avaliação do seu negócio no Google. Sem mensalidade.">
 <meta property="og:image" content="https://eduhtoledo-cloud.github.io/avalia-barretos/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -32,7 +32,7 @@
 <script src="https://ggcheckout.app/embed/checkout.js?v=2" async></script>
 
 <!-- CONFIGURAÇÃO (preços, links, WhatsApp): edite o arquivo config.js e aumente o ?v= aqui e no obrigado.html -->
-<script src="config.js?v=3"></script>
+<script src="config.js?v=4"></script>
 <script src="https://player.vimeo.com/api/player.js" async></script>
 
 <style>
@@ -70,7 +70,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .hero-top{display:flex;justify-content:space-between;align-items:center;padding:16px 0}
 .logo{font-weight:900;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
 .logo img{border-radius:7px;flex:none}
-.logo b{color:#6EA2FF}
+.logo b{background:linear-gradient(90deg,#2BD46B,#FFD21A);-webkit-background-clip:text;background-clip:text;color:transparent}
 .rating{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
 #hero .rating{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .stars{display:inline-flex;gap:1px;color:var(--star);font-size:12px;letter-spacing:1px}
@@ -127,7 +127,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .qbar{position:sticky;top:0;z-index:10;background:rgba(245,247,251,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .qbar-in{max-width:520px;margin:0 auto;padding:12px 20px 10px}
 .qbar-row{display:flex;justify-content:space-between;align-items:center}
-.qbar .logo{font-size:17px;color:var(--ink)}.qbar .logo b{color:var(--brand)}
+.qbar .logo{font-size:17px;color:var(--ink)}.qbar .logo b{background:linear-gradient(90deg,#009C3B,#D9A400);-webkit-background-clip:text;background-clip:text;color:transparent}
 .qbar .rating{color:var(--muted)}
 .prog{display:flex;align-items:center;gap:10px;margin-top:12px}
 .back{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--ink);font-size:18px}
@@ -513,7 +513,7 @@ const STEPS = [
         <div class="field"><label for="fNome">Nome da empresa</label>
           <input class="input" id="fNome" autocomplete="organization" placeholder="Ex.: Barbearia do João" value="${esc(A.nome||"")}"></div>
         <div class="field"><label for="fCidade">Cidade</label>
-          <input class="input" id="fCidade" autocomplete="address-level2" placeholder="Ex.: Barretos" value="${esc(A.cidade||"")}"></div>
+          <input class="input" id="fCidade" autocomplete="address-level2" placeholder="Ex.: São Paulo" value="${esc(A.cidade||"")}"></div>
         ${C.googleApiKey?`<button class="linkbtn" id="voltarBusca" type="button">🔎 Buscar minha empresa no Google</button>`:""}`; }
       return head + `<p class="qs">Qual é o nome da sua empresa no Google? Digite e escolha na lista.</p>
         <div class="field gsearch">
