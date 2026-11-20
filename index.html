@@ -98,6 +98,17 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
   .price-line{justify-content:flex-start}
 }
 
+/* celular: só o essencial (os benefícios já passam na faixa azul do topo) */
+@media (max-width:899px){
+  .only-desktop{display:none!important}
+  .eyebrow,.perks{display:none}
+  .hero-title{margin-top:0}
+  .hero-sub{font-size:16.5px;max-width:330px}
+  .cta-hero{margin-top:24px}
+  .hero-foot{padding-top:14px;font-size:10.5px}
+}
+@media (min-width:900px){ .only-mobile{display:none!important} }
+
 /* ===================== QUIZ ===================== */
 #quiz{min-height:100svh;display:flex;flex-direction:column}
 .qbar{position:sticky;top:0;z-index:10;background:rgba(245,247,251,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
@@ -266,7 +277,7 @@ body.on-hero .wa{bottom:20px}
     <div class="hero-body">
       <span class="eyebrow"><i></i> Placa NFC + QR Code para o Google</span>
       <h1 class="hero-title"><span>Aproximou.</span><span>Clicou.</span><span>Avaliou.</span></h1>
-      <p class="hero-sub">O cliente aproxima o celular da placa e a página de avaliação do seu negócio no Google <strong>abre em 3 segundos</strong>. Já chega configurada, é só colocar no balcão.</p>
+      <p class="hero-sub"><span class="only-mobile">O cliente aproxima o celular e a avaliação do seu negócio no Google <strong>abre na hora</strong>.</span><span class="only-desktop">O cliente aproxima o celular da placa e a página de avaliação do seu negócio no Google <strong>abre em 3 segundos</strong>. Já chega configurada, é só colocar no balcão.</span></p>
       <div class="perks">
         <div class="perk"><b>💳</b>Sem mensalidade</div>
         <div class="perk"><b>📱</b>iPhone e Android</div>
@@ -274,7 +285,7 @@ body.on-hero .wa{bottom:20px}
         <div class="perk"><b>♾️</b>Dura para sempre</div>
       </div>
       <button class="cta-hero" id="startBtn">Iniciar configuração <i>→</i></button>
-      <div class="price-line"><span>A partir de <b id="chipPreco">R$ 39,99</b> por placa</span><span>🔒 Pagamento seguro</span></div>
+      <div class="price-line"><span>A partir de <b id="chipPreco">R$ 39,99</b> por placa</span><span class="only-desktop">🔒 Pagamento seguro</span></div>
     </div>
 
     <footer class="hero-foot" id="heroFoot"></footer>
