@@ -297,6 +297,27 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .lay-li input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand)}
 @media (max-width:1080px){ .t-p,.t-m,.t-g{grid-column:1/-1} }
 @media (max-width:820px){ .lay-li{flex-wrap:wrap} .lay-li b{flex-basis:60%} }
+.blk{position:relative}
+.dgrid.edit{row-gap:30px;padding-top:14px}
+.dgrid.edit .blk{outline:2px dashed #AFC2F4;outline-offset:5px;border-radius:16px}
+.dgrid.edit .blk > :not(.blk-bar):not(.rz):not(.rz-tag){pointer-events:none;user-select:none}
+.blk-bar{position:absolute;top:-17px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:6;pointer-events:none}
+.blk-bar .grip{pointer-events:auto;cursor:grab;background:var(--brand);color:#fff;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;touch-action:none;user-select:none;box-shadow:0 4px 12px rgba(26,92,229,.3)}
+.blk-bar .grip:active{cursor:grabbing}
+.blk-bar button{pointer-events:auto;background:#fff;border:1px solid var(--line);width:28px;height:28px;border-radius:50%;font-size:13px;color:var(--muted);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.blk-bar button:hover{color:var(--bad);border-color:var(--bad)}
+.rz{position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:16px;height:64px;border-radius:9px;background:var(--brand);cursor:ew-resize;z-index:6;touch-action:none;box-shadow:0 0 0 3px #fff,0 4px 12px rgba(26,92,229,.35)}
+.rz::after{content:"";position:absolute;left:5px;right:5px;top:22px;bottom:22px;border-left:2px solid rgba(255,255,255,.8);border-right:2px solid rgba(255,255,255,.8)}
+.rz-tag{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:var(--ink);color:#fff;font-size:13px;font-weight:800;padding:6px 10px;border-radius:9px;z-index:7;pointer-events:none}
+.blk.arrastando{opacity:.35}
+.blk.ins-antes::before,.blk.ins-depois::after{content:"";position:absolute;top:0;bottom:0;width:5px;background:var(--brand);border-radius:5px;z-index:8}
+.blk.ins-antes::before{left:-11px} .blk.ins-depois::after{right:-11px}
+.blk.ins-cima::before,.blk.ins-baixo::after{content:"";position:absolute;left:0;right:0;height:5px;background:var(--brand);border-radius:5px;z-index:8}
+.blk.ins-cima::before{top:-16px} .blk.ins-baixo::after{bottom:-16px}
+.dghost{position:fixed;z-index:200;pointer-events:none;background:var(--brand);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:10px;box-shadow:0 10px 30px rgba(26,92,229,.4)}
+.edbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--brand-soft);border:1px solid #C9D6F5;border-radius:14px;padding:10px 12px;margin-bottom:6px;font-size:13px}
+.edbar .hint{flex-basis:100%;margin:0}
+@media (max-width:1080px){ .rz{display:none} }
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -710,6 +731,56 @@ function abrirLayout(){
   desenhar();
   $("#layReset").onclick = () => { L = LAY_PADRAO.map(x => ({ ...x })); desenhar(); };
 }
+let EDIT = false;
+function ligarEdicao(){
+  if (!EDIT) return;
+  const grid = $(".dgrid"); let L = layoutPainel();
+  const salvarERender = async () => { await salvarLayout(L); painel(); };
+  grid.querySelectorAll("[data-hide]").forEach(b => b.onclick = () => { L.find(x => x.id === b.dataset.hide).vis = false; salvarERender(); });
+  document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const i = L.findIndex(x => x.id === b.dataset.add); const [it] = L.splice(i, 1); it.vis = true; L.push(it); salvarERender(); });
+  $("#edReset").onclick = () => { L = LAY_PADRAO.map(x => ({ ...x })); salvarERender(); };
+  $("#edOk").onclick = () => { EDIT = false; painel(); toast("Painel salvo ✅"); };
+  const limpar = () => grid.querySelectorAll(".blk").forEach(b => b.classList.remove("ins-antes", "ins-depois", "ins-cima", "ins-baixo"));
+  // mover (mouse e toque)
+  grid.querySelectorAll(".grip").forEach(g => g.onpointerdown = e => {
+    e.preventDefault();
+    const blk = g.closest(".blk"), id = blk.dataset.blk;
+    const ghost = document.createElement("div"); ghost.className = "dghost"; ghost.textContent = "⠿ " + BLOCOS[id]; document.body.appendChild(ghost);
+    blk.classList.add("arrastando"); let alvo = null, depois = false;
+    const mv = ev => {
+      ghost.style.left = ev.clientX + 14 + "px"; ghost.style.top = ev.clientY + 10 + "px"; limpar();
+      const el = (document.elementFromPoint(ev.clientX, ev.clientY) || {}).closest?.(".blk");
+      if (el && el !== blk && grid.contains(el)) {
+        const r = el.getBoundingClientRect(), largo = r.width > grid.clientWidth * .85;
+        depois = largo ? ev.clientY > r.top + r.height / 2 : ev.clientX > r.left + r.width / 2;
+        el.classList.add(largo ? (depois ? "ins-baixo" : "ins-cima") : (depois ? "ins-depois" : "ins-antes")); alvo = el;
+      } else alvo = null;
+      if (ev.clientY < 70) scrollBy(0, -14); else if (ev.clientY > innerHeight - 70) scrollBy(0, 14);
+    };
+    const up = () => {
+      removeEventListener("pointermove", mv); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+      ghost.remove(); blk.classList.remove("arrastando"); limpar();
+      if (alvo) { const de = L.findIndex(x => x.id === id), [it] = L.splice(de, 1); L.splice(L.findIndex(x => x.id === alvo.dataset.blk) + (depois ? 1 : 0), 0, it); salvarERender(); }
+    };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up); addEventListener("pointercancel", up); mv(e);
+  });
+  // redimensionar: encaixa em 1/3, 1/2, 2/3 ou inteiro
+  const TAM_DE = { 2: "p", 3: "m", 4: "g", 6: "full" }, NOME = { p: "1/3", m: "1/2", g: "2/3", full: "Inteiro" };
+  grid.querySelectorAll(".rz").forEach(h => h.onpointerdown = e => {
+    e.preventDefault();
+    const blk = h.closest(".blk"), it = L.find(x => x.id === blk.dataset.blk);
+    const gap = 14, col = (grid.clientWidth - gap * 5) / 6, x0 = e.clientX, w0 = blk.getBoundingClientRect().width;
+    const tag = document.createElement("div"); tag.className = "rz-tag"; blk.appendChild(tag);
+    let tam = it.tam;
+    const mv = ev => {
+      const span = (w0 + (ev.clientX - x0) + gap) / (col + gap);
+      const op = [2, 3, 4, 6].reduce((a, b) => Math.abs(b - span) < Math.abs(a - span) ? b : a);
+      tam = TAM_DE[op]; blk.classList.remove("t-p", "t-m", "t-g", "t-full"); blk.classList.add("t-" + tam); tag.textContent = NOME[tam];
+    };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); tag.remove(); if (tam !== it.tam) { it.tam = tam; salvarERender(); } };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up); addEventListener("pointercancel", up); mv(e);
+  });
+}
 function blocoEstoquePainel(){
   const ps = produtos.filter(p => p.ativo);
   return `<div class="card"><h3>Estoque <button class="btn ghost sm" data-go="estoque">Abrir</button></h3>
@@ -779,10 +850,11 @@ function painel(){
   $("#view").innerHTML = `
     <div class="dhead">
       <div><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2><p>Acompanhe suas vendas e métricas em tempo real.</p></div>
-      <div class="icons"><button class="btn ghost sm" id="dLay" style="height:38px">✏️ Personalizar</button><button class="ibtn" id="dRef" title="Atualizar agora">${SVG.refresh}</button><button class="ibtn ${document.body.classList.contains("privado") ? "on" : ""}" id="dEye" title="Esconder valores">${SVG.eye}</button><button class="ibtn" id="dFin" title="Financeiro">${SVG.money}</button></div>
+      <div class="icons"><button class="btn ${EDIT ? "" : "ghost"} sm" id="dLay" style="height:38px">${EDIT ? "✅ Concluir" : "✏️ Personalizar"}</button><button class="ibtn" id="dRef" title="Atualizar agora">${SVG.refresh}</button><button class="ibtn ${document.body.classList.contains("privado") ? "on" : ""}" id="dEye" title="Esconder valores">${SVG.eye}</button><button class="ibtn" id="dFin" title="Financeiro">${SVG.money}</button></div>
     </div>
     <div class="periodos" style="margin-bottom:16px">${PERS.map(([k, t]) => `<button data-per="${k}" class="${PER === k ? "on" : ""}">${t}</button>`).join("")}<input type="month" id="perMes" value="${mes}" title="Escolher um mês" class="${PER === "custom" ? "on" : ""}" style="${PER === "custom" ? "color:var(--brand);font-weight:700" : ""}"></div>
-    <div class="dgrid">${layoutPainel().filter(b => b.vis).map(b => `<div class="blk t-${b.tam}" data-blk="${b.id}">${BL[b.id]()}</div>`).join("")}</div>
+    ${EDIT ? `<div class="edbar"><b>✏️ Editando o painel</b>${layoutPainel().filter(b => !b.vis).map(b => `<button class="btn ghost sm" data-add="${b.id}">+ ${BLOCOS[b.id]}</button>`).join("")}<span style="margin-left:auto"></span><button class="btn ghost sm" id="edReset">Restaurar padrão</button><button class="btn sm" id="edOk">Concluir</button><p class="hint">Arraste pelo selo azul para mover · puxe a alça azul da direita para mudar o tamanho (1/3, 1/2, 2/3 ou inteiro) · ✕ esconde o bloco</p></div>` : ""}
+    <div class="dgrid ${EDIT ? "edit" : ""}">${layoutPainel().filter(b => b.vis).map(b => `<div class="blk t-${b.tam}" data-blk="${b.id}">${EDIT ? `<div class="blk-bar"><span class="grip">⠿ ${BLOCOS[b.id]}</span><button data-hide="${b.id}" title="Esconder bloco">✕</button></div><div class="rz" title="Arraste para mudar o tamanho"></div>` : ""}${BL[b.id]()}</div>`).join("")}</div>
     </div>`;
   ligarLinhas(); ligarAvisos(); ligarArea(pr);
   document.querySelectorAll("[data-per]").forEach(b => b.onclick = () => { PER = b.dataset.per; try { localStorage.setItem("per", PER); } catch (e) {} painel(); });
@@ -790,7 +862,8 @@ function painel(){
   $("#dRef").onclick = () => { recarregarAoVivo(); toast("Atualizado"); };
   $("#dEye").onclick = () => { const on = document.body.classList.toggle("privado"); try { localStorage.setItem("privado", on ? "1" : "0"); } catch (e) {} painel(); };
   $("#dFin").onclick = () => ir("financeiro");
-  $("#dLay").onclick = abrirLayout;
+  $("#dLay").onclick = () => { EDIT = !EDIT; painel(); if (!EDIT) toast("Painel salvo ✅"); };
+  ligarEdicao();
   document.querySelectorAll("[data-go]").forEach(a => { a.style.cursor = "pointer"; a.onclick = () => ir(a.dataset.go); });
 }
 
@@ -1358,7 +1431,7 @@ async function recarregarAoVivo(){
   recarregando = true;
   try {
     await carregar(); ultimaSync = Date.now(); marcarSync();
-    if ($("#dlg").open || digitando()) pendente = true;
+    if ($("#dlg").open || digitando() || (view === "painel" && EDIT)) pendente = true;
     else {
       const y = scrollY, rl = (document.querySelector(".rolagem") || {}).scrollTop;
       render(); scrollTo(0, y);
