@@ -95,3 +95,19 @@ alter table public.avaliacoes_hist enable row level security;
 -- ---------- v4: tempo real (a central se atualiza sozinha) ----------
 -- alter publication supabase_realtime add table public.clientes, public.vendas, public.lancamentos,
 --   public.produtos, public.movimentos, public.custos_fixos, public.avaliacoes_hist, public.perfis;
+
+-- ---------- v5: CRM, prospecção e lembretes ----------
+alter table public.clientes drop constraint if exists clientes_status_check;
+alter table public.clientes add constraint clientes_status_check check (status in ('lead','contato','agendado','negociando','cliente','perdido'));
+alter table public.clientes add column if not exists origem text;
+create table if not exists public.atividades (
+  id bigint generated always as identity primary key,
+  cliente_id bigint not null references public.clientes(id) on delete cascade,
+  tipo text not null default 'whatsapp' check (tipo in ('whatsapp','ligacao','visita','call','reuniao','nota')),
+  quando timestamptz not null default now(),
+  feito boolean not null default false,
+  obs text,
+  criado_por uuid references public.perfis(id) default auth.uid(),
+  criado_em timestamptz not null default now()
+);
+-- RLS: ver/criar/editar/excluir = eh_ativo(); tabela incluída no supabase_realtime
