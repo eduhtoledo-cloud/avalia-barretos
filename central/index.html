@@ -743,15 +743,30 @@ function buscaEmpresa(input, { locais = false, aoEscolher, aoDigitar }){
   const box = document.createElement("div"); box.className = "acbox hide"; input.parentNode.appendChild(box);
   let token = novoToken(), req = 0, timer = null, itens = [], sel = -1;
   const fechar = () => { box.classList.add("hide"); sel = -1; };
-  const desenhar = (loc, goo, msg) => {
+  const desenhar = (loc, goo, msg, completa, rotulo) => {
     itens = [...loc.map(c => ({ cliente: c })), ...goo.map(g => ({ google: g }))];
     let h = "";
     if (loc.length) h += `<h6>Na carteira</h6>` + loc.map((c, i) => `<button type="button" data-i="${i}"><b>${esc(c.empresa)}</b><small>${esc([c.cidade, ST_CLI[c.status]].filter(Boolean).join(" · "))}</small></button>`).join("");
-    if (goo.length) h += `<h6>No Google</h6>` + goo.map((g, i) => `<button type="button" data-i="${loc.length + i}"><b>${esc(g.main)}</b><small>${esc(g.sec)}</small></button>`).join("");
+    if (goo.length) h += `<h6>${rotulo || "No Google"}</h6>` + goo.map((g, i) => `<button type="button" data-i="${loc.length + i}"><b>${esc(g.main)}</b><small>${esc(g.sec)}</small></button>`).join("");
     if (msg) h += `<p>${msg}</p>`;
+    if (completa) h += `<button type="button" data-full style="color:var(--brand);font-weight:700;border-top:1px solid var(--line)">🔎 Não achou? Fazer busca completa no Google</button>`;
     box.innerHTML = h; box.classList.toggle("hide", !h);
-    box.querySelectorAll("button").forEach(b => b.onmousedown = e => { e.preventDefault(); escolher(+b.dataset.i); });
+    box.querySelectorAll("button[data-i]").forEach(b => b.onmousedown = e => { e.preventDefault(); escolher(+b.dataset.i); });
+    const bf = box.querySelector("[data-full]"); if (bf) bf.onmousedown = e => { e.preventDefault(); buscaCompleta(loc); };
   };
+  async function buscaCompleta(loc){
+    const t = input.value.trim(); if (t.length < 3) return;
+    const my = ++req; desenhar(loc, [], "Fazendo busca completa no Google…");
+    try {
+      const r = await fetch("https://places.googleapis.com/v1/places:searchText", { method: "POST",
+        headers: { "Content-Type": "application/json", "X-Goog-Api-Key": K.googleApiKey, "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress" },
+        body: JSON.stringify({ textQuery: t, languageCode: "pt-BR", regionCode: "br", pageSize: 8 }) });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json(); if (my !== req) return;
+      const goo = (d.places || []).map(p => ({ id: p.id, main: p.displayName?.text || "", sec: p.formattedAddress || "" }));
+      desenhar(loc, goo, goo.length ? "" : "Também não achei na busca completa. Tente incluir a cidade no nome ou cadastre à mão.", false, "Busca completa no Google");
+    } catch (e) { if (my === req) desenhar(loc, [], "Busca do Google indisponível agora. Pode cadastrar à mão."); }
+  }
   async function escolher(i){
     const it = itens[i]; if (!it) return; fechar();
     if (it.cliente) { aoEscolher({ cliente: it.cliente }); return; }
@@ -785,12 +800,13 @@ function buscaEmpresa(input, { locais = false, aoEscolher, aoDigitar }){
         const d = await r.json(); if (my !== req) return;
         const goo = (d.suggestions || []).map(s => s.placePrediction).filter(Boolean).slice(0, 5).map(p => ({
           id: p.placeId, main: p.structuredFormat?.mainText?.text || p.text?.text || "", sec: p.structuredFormat?.secondaryText?.text || "" }));
-        desenhar(loc, goo, goo.length ? "" : "Nada encontrado no Google. Pode cadastrar à mão.");
+        if (!goo.length) { buscaCompleta(loc); return; }
+        desenhar(loc, goo, "", true);
       } catch (e) { if (my === req) desenhar(loc, [], "Busca do Google indisponível agora. Pode cadastrar à mão."); }
     }, 300);
   });
   input.addEventListener("keydown", e => {
-    const bs = box.querySelectorAll("button"); if (box.classList.contains("hide") || !bs.length) return;
+    const bs = box.querySelectorAll("button[data-i]"); if (box.classList.contains("hide") || !bs.length) return;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + bs.length) % bs.length; bs.forEach((b, i) => b.classList.toggle("sel", i === sel)); }
     else if (e.key === "Enter" && sel >= 0) { e.preventDefault(); escolher(+bs[sel].dataset.i); }
     else if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); fechar(); }
