@@ -172,6 +172,17 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .vinc{display:flex;gap:10px;align-items:flex-start;margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:#0B6B3D;font-size:12.5px;line-height:1.4}
 .vinc b{color:var(--ink)} .vinc a{color:var(--brand);font-weight:700;white-space:nowrap}
 .vinc.old{background:var(--brand-soft);color:var(--brand-h)}
+.prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin:14px 0}
+.prod h4{font-size:14.5px;display:flex;justify-content:space-between;gap:8px;align-items:center;cursor:pointer}
+.prod .sal{font-size:30px;font-weight:900;letter-spacing:-.03em;margin:8px 0 2px}
+.prod .sal small{font-size:13px;font-weight:600;color:var(--muted);margin-left:4px}
+.prod p{font-size:12.5px;color:var(--muted)}
+.prod .qa{margin-top:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+.cfx{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.cfx:first-of-type{border-top:0}
+.cfx b{display:block;font-size:13.5px;cursor:pointer} .cfx small{font-size:12px;color:var(--muted)}
+.q-pos{color:var(--ok)} .q-neg{color:var(--bad)}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -188,7 +199,7 @@ nav.bottom{display:none}
   .top h2{font-size:20px;width:100%}
   .top .in{flex:1}
   nav.bottom{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
-  nav.bottom a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);padding:5px 0;cursor:pointer}
+  nav.bottom a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--muted);padding:5px 0;cursor:pointer}
   nav.bottom a.on{color:var(--brand)}
   .fab{right:16px;bottom:calc(78px + env(safe-area-inset-bottom));height:52px;padding:0 16px}
   .fab span{display:none}
@@ -256,6 +267,7 @@ const ICON = {
   vendas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>',
   clientes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   financeiro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+  estoque:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>',
   equipe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
 };
 
@@ -263,9 +275,9 @@ const ICON = {
 const K = window.CONFIG || { kits: [] };
 const S = window.CENTRAL || {};
 let sb = null, user = null, me = null;
-let equipe = [], clientes = [], vendas = [], lanc = [];
+let equipe = [], clientes = [], vendas = [], lanc = [], produtos = [], movs = [], fixos = [];
 let view = "painel", mes = mesAtual();
-const F = { vBusca:"", vStatus:"", vVend:"", cBusca:"", cStatus:"", lTipo:"" };
+const F = { vBusca:"", vStatus:"", vVend:"", vServ:"", cBusca:"", cStatus:"", lTipo:"" };
 
 const ST_VENDA = { pendente:"Pendente", pago:"Pago", enviado:"Enviado", entregue:"Entregue", cancelado:"Cancelado" };
 const ST_CLI   = { lead:"Lead", negociando:"Negociando", cliente:"Cliente", perdido:"Perdido" };
@@ -276,6 +288,13 @@ const CATS = {
   investimento: ["Anúncios Meta","Anúncios Google","Estoque","Equipamentos","Material de divulgação"],
   entrada: ["Aporte","Venda avulsa","Outros"]
 };
+const SERVICOS = { placa:"Placa NFC", google_novo:"Google novo", google_atualizacao:"Atualização do Google" };
+const servDe = v => (v.servicos && v.servicos.length ? v.servicos : ["placa"]);
+const servTxt = v => servDe(v).map(k => k === "placa" ? `${v.qtd} placa${v.qtd != 1 ? "s" : ""}${v.cor ? " " + v.cor : ""}` : (SERVICOS[k] || k)).join(" + ");
+const saldo = pid => soma(movs.filter(m => m.produto_id === pid), m => m.qtd);
+function custoMedio(pid){ const es = movs.filter(m => m.produto_id === pid && m.tipo === "entrada" && m.qtd > 0); const q = soma(es, m => m.qtd); return q ? soma(es, m => m.qtd * m.custo_unit) / q : 0; }
+const prodCor = cor => produtos.find(p => p.ativo && p.cor === cor);
+const CORES = { azul:"#1A5CE5", preta:"#0F172A" };
 const CANAIS = ["Site","WhatsApp","Instagram","Presencial","Indicação"];
 const PAGTOS = ["Pix","Cartão","Boleto","Dinheiro"];
 const nomeVend = id => (equipe.find(p => p.id === id) || {}).nome || "—";
@@ -379,15 +398,19 @@ function telaNovaSenha(){
 
 /* ===================== dados ===================== */
 async function carregar(){
-  const [p, c, v, l] = await Promise.all([
+  const [p, c, v, l, pr, mv, fx] = await Promise.all([
     sb.from("perfis").select("*").order("nome"),
     sb.from("clientes").select("*").order("empresa"),
     sb.from("vendas").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
-    sb.from("lancamentos").select("*").order("data", { ascending:false }).order("id", { ascending:false })
+    sb.from("lancamentos").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
+    sb.from("produtos").select("*").order("id"),
+    sb.from("movimentos").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
+    sb.from("custos_fixos").select("*").order("nome")
   ]);
-  const err = [p,c,v,l].find(x => x.error);
+  const err = [p,c,v,l,pr,mv,fx].find(x => x.error);
   if (err) toast("Erro ao carregar: " + err.error.message);
   equipe = p.data || []; clientes = c.data || []; vendas = v.data || []; lanc = l.data || [];
+  produtos = pr.data || []; movs = mv.data || []; fixos = fx.data || [];
 }
 async function salvar(tabela, dados, id){
   const q = id ? sb.from(tabela).update(dados).eq("id", id).select().single() : sb.from(tabela).insert(dados).select().single();
@@ -402,22 +425,22 @@ async function excluir(tabela, id){
 
 /* ===================== navegação ===================== */
 function montarNav(){
-  const itens = [["painel","Painel"],["vendas","Vendas"],["clientes","Clientes"],["financeiro","Financeiro"]];
+  const itens = [["painel","Painel"],["vendas","Vendas"],["clientes","Clientes"],["estoque","Estoque"],["financeiro","Financeiro"]];
   if (me.papel === "admin") itens.push(["equipe","Equipe"]);
   const html = itens.map(([k,t]) => `<a data-v="${k}">${ICON[k]}<span>${t}</span></a>`).join("");
   $("#navSide").innerHTML = html; $("#navBottom").innerHTML = html;
   document.querySelectorAll("[data-v]").forEach(a => a.onclick = () => ir(a.dataset.v));
 }
 function ir(v){
-  if (!["painel","vendas","clientes","financeiro","equipe"].includes(v) || (v === "equipe" && me.papel !== "admin")) v = "painel";
+  if (!["painel","vendas","clientes","estoque","financeiro","equipe"].includes(v) || (v === "equipe" && me.papel !== "admin")) v = "painel";
   view = v; history.replaceState(null, "", "#" + v);
   document.querySelectorAll("[data-v]").forEach(a => a.classList.toggle("on", a.dataset.v === v));
-  const fab = { vendas:["Nova venda", () => abrirVenda()], clientes:["Novo cliente", () => abrirCliente()], financeiro:["Novo lançamento", () => abrirLanc()], painel:["Nova venda", () => abrirVenda()] }[v];
+  const fab = { vendas:["Nova venda", () => abrirVenda()], clientes:["Novo cliente", () => abrirCliente()], financeiro:["Novo lançamento", () => abrirLanc()], estoque:["Entrada de estoque", () => abrirMov("entrada")], painel:["Nova venda", () => abrirVenda()] }[v];
   $("#fab").classList.toggle("hide", !fab);
   if (fab){ $("#fabTxt").textContent = fab[0]; $("#fab").onclick = fab[1]; }
   render(); scrollTo(0,0);
 }
-function render(){ ({ painel, vendas: telaVendas, clientes: telaClientes, financeiro: telaFin, equipe: telaEquipe })[view](); }
+function render(){ ({ painel, vendas: telaVendas, clientes: telaClientes, estoque: telaEstoque, financeiro: telaFin, equipe: telaEquipe })[view](); }
 
 function seletorMes(){
   return `<input type="month" class="in" id="mes" value="${mes}" aria-label="Mês">`;
@@ -438,7 +461,10 @@ function numerosDoMes(ym){
   const saidas = custos + despesas + invest;
   return { vs, ls, fat, entradas, custoVendas, custos, despesas, invest, saidas,
            resultado: fat + entradas - saidas, placas: soma(vs, v => v.qtd),
-           receber: soma(vs.filter(v => v.status === "pendente"), v => v.valor) };
+           receber: soma(vs.filter(v => v.status === "pendente"), v => v.valor),
+           gNovo: vs.filter(v => servDe(v).includes("google_novo")).length,
+           gAtual: vs.filter(v => servDe(v).includes("google_atualizacao")).length,
+           compras: soma(movs.filter(m => m.tipo === "entrada" && m.data.startsWith(ym)), m => m.qtd * m.custo_unit) };
 }
 
 /* ===================== PAINEL ===================== */
@@ -454,8 +480,8 @@ function painel(){
   $("#view").innerHTML = `
     <div class="top"><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2>${seletorMes()}</div>
     <div class="grid kpis">
-      <div class="card kpi"><small>Faturamento</small><b class="num">${brl(n.fat)}</b><em>${varia(n.fat, ant.fat) || "&nbsp;"}</em></div>
-      <div class="card kpi"><small>Vendas · placas</small><b class="num">${n.vs.length} · ${n.placas}</b><em>Ticket médio ${brl(n.vs.length ? n.fat / n.vs.length : 0)}</em></div>
+      <div class="card kpi"><small>Faturamento</small><b class="num">${brl(n.fat)}</b><em>${varia(n.fat, ant.fat) || "Ticket médio " + brl(n.vs.length ? n.fat / n.vs.length : 0)}</em></div>
+      <div class="card kpi"><small>Vendas</small><b class="num">${n.vs.length}</b><em>${n.placas} placas · ${n.gNovo} Google novo · ${n.gAtual} atualiz.</em></div>
       <div class="card kpi"><small>Saídas</small><b class="num">${brl(n.saidas)}</b><em>Custos ${brl(n.custos)} · Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}</em></div>
       <div class="card kpi ${n.resultado >= 0 ? "pos" : "neg"}"><small>Resultado do mês</small><b class="num">${brl(n.resultado)}</b><em>${n.receber ? "A receber " + brl(n.receber) : "Entradas − saídas"}</em></div>
     </div>
@@ -485,14 +511,14 @@ function linhaVenda(v){
   const c = cliente(v.cliente_id), d = dia(v.data);
   return `<div class="li lv" data-venda="${v.id}">
     <div class="dt"><b>${d.d}</b>${d.m}</div>
-    <div style="min-width:0"><div class="t">${esc(c ? c.empresa : "Sem cliente")}</div><div class="s">${v.qtd} placa${v.qtd>1?"s":""}${v.cor ? " " + esc(v.cor) : ""} · ${esc(nomeVend(v.vendedor_id))}${v.canal ? " · " + esc(v.canal) : ""}</div></div>
+    <div style="min-width:0"><div class="t">${esc(c ? c.empresa : "Sem cliente")}</div><div class="s">${esc(servTxt(v))} · ${esc(nomeVend(v.vendedor_id))}${v.canal ? " · " + esc(v.canal) : ""}</div></div>
     <span class="pill p-${v.status} st">${ST_VENDA[v.status]}</span>
     <div class="v num">${brl(v.valor)}</div></div>`;
 }
 function telaVendas(){
   const q = F.vBusca.toLowerCase();
   const lista = vendas.filter(v => v.data.startsWith(mes)
-    && (!F.vStatus || v.status === F.vStatus) && (!F.vVend || v.vendedor_id === F.vVend)
+    && (!F.vStatus || v.status === F.vStatus) && (!F.vVend || v.vendedor_id === F.vVend) && (!F.vServ || servDe(v).includes(F.vServ))
     && (!q || ((cliente(v.cliente_id)||{}).empresa||"").toLowerCase().includes(q) || (v.obs||"").toLowerCase().includes(q)));
   const val = vendasValidas(lista);
   $("#view").innerHTML = `
@@ -500,6 +526,7 @@ function telaVendas(){
     <div class="tools">
       <input class="in" id="vBusca" placeholder="Buscar empresa ou observação" value="${esc(F.vBusca)}">
       <select class="in" id="vStatus"><option value="">Todos os status</option>${Object.entries(ST_VENDA).map(([k,t]) => `<option value="${k}" ${F.vStatus===k?"selected":""}>${t}</option>`).join("")}</select>
+      <select class="in" id="vServ"><option value="">Todos os serviços</option>${Object.entries(SERVICOS).map(([k,t]) => `<option value="${k}" ${F.vServ===k?"selected":""}>${t}</option>`).join("")}</select>
       <select class="in" id="vVend"><option value="">Todos os vendedores</option>${equipe.map(p => `<option value="${p.id}" ${F.vVend===p.id?"selected":""}>${esc(p.nome||p.email)}</option>`).join("")}</select>
     </div>
     <div class="list">${lista.length ? lista.map(linhaVenda).join("") : `<div class="empty"><b>Nenhuma venda em ${nomeMes(mes)}</b>Toque em “Nova venda” para registrar.</div>`}
@@ -508,13 +535,17 @@ function telaVendas(){
   $("#vBusca").oninput = e => { F.vBusca = e.target.value; const p = e.target.selectionStart; telaVendas(); const i = $("#vBusca"); i.focus(); i.setSelectionRange(p,p); };
   $("#vStatus").onchange = e => { F.vStatus = e.target.value; telaVendas(); };
   $("#vVend").onchange = e => { F.vVend = e.target.value; telaVendas(); };
-  $("#csv").onclick = () => csv(`vendas-${mes}.csv`, ["Data","Empresa","Telefone","Cidade","Placas","Cor","Valor","Custo","Canal","Pagamento","Status","Vendedor","Observação"],
-    lista.map(v => { const c = cliente(v.cliente_id) || {}; return [v.data, c.empresa, c.telefone, c.cidade, v.qtd, v.cor, v.valor, v.custo, v.canal, v.pagamento, ST_VENDA[v.status], nomeVend(v.vendedor_id), v.obs]; }));
+  $("#vServ").onchange = e => { F.vServ = e.target.value; telaVendas(); };
+  $("#csv").onclick = () => csv(`vendas-${mes}.csv`, ["Data","Empresa","Telefone","Cidade","Serviços","Placas","Cor","Valor","Custo","Canal","Pagamento","Status","Vendedor","Observação"],
+    lista.map(v => { const c = cliente(v.cliente_id) || {}; return [v.data, c.empresa, c.telefone, c.cidade, servDe(v).map(k => SERVICOS[k] || k).join(" + "), v.qtd, v.cor, v.valor, v.custo, v.canal, v.pagamento, ST_VENDA[v.status], nomeVend(v.vendedor_id), v.obs]; }));
 }
 
 function abrirVenda(id, clienteId){
   let G = null;   // empresa escolhida no Google (cliente novo)
-  const v = vendas.find(x => x.id === id) || { data: hoje(), qtd: 1, cor: "azul", valor: (K.kits[0]||{}).preco || 0, custo: 0, canal: "WhatsApp", pagamento: "Pix", status: "pago", vendedor_id: me.id, cliente_id: clienteId || null };
+  const v = vendas.find(x => x.id === id) || { data: hoje(), qtd: 1, cor: "azul", servicos: ["placa"], valor: (K.kits[0]||{}).preco || 0, custo: 0, canal: "WhatsApp", pagamento: "Pix", status: "pago", vendedor_id: me.id, cliente_id: clienteId || null };
+  const baixaDe = cor => { const pr = prodCor(cor); return pr && id ? -soma(movs.filter(m => m.venda_id === id && m.produto_id === pr.id), m => m.qtd) : 0; };
+  const qA0 = v.cor === "mista" ? baixaDe("azul") : 0, qP0 = v.cor === "mista" ? baixaDe("preta") : 0;
+  let custoManual = !!id;
   const c = cliente(v.cliente_id);
   modal(id ? "Editar venda" : "Nova venda", `
     <label class="f"><span>Empresa (cliente)</span></label>
@@ -524,16 +555,28 @@ function abrirVenda(id, clienteId){
       <label class="f"><span>WhatsApp do cliente</span><input class="in" name="telefone" inputmode="tel" placeholder="(17) 99999-9999"></label>
       <label class="f"><span>Cidade</span><input class="in" name="cidade" placeholder="Barretos"></label>
     </div>
-    <label class="f"><span>Kit</span></label>
-    <div class="kits">${K.kits.map(k => `<button type="button" data-q="${k.qtd}" data-p="${k.preco}" class="${v.qtd==k.qtd && Number(v.valor)==k.preco ? "on" : ""}"><b>${k.qtd} placa${k.qtd>1?"s":""}</b>${brl(k.preco)}</button>`).join("")}</div>
-    <div class="row3">
-      <label class="f"><span>Placas</span><input class="in num" name="qtd" type="number" min="1" value="${v.qtd}" required></label>
+    <label class="f"><span>O que foi feito</span></label>
+    <div class="seg" id="servs">${Object.entries(SERVICOS).map(([k,t]) => `<button type="button" data-sv="${k}" class="${servDe(v).includes(k)?"on":""}">${t}</button>`).join("")}</div>
+    <p class="hint">Pode marcar mais de um (ex.: Google novo + Placa NFC).</p>
+    <div id="blocoPlaca">
+      <label class="f"><span>Kit</span></label>
+      <div class="kits">${K.kits.map(k => `<button type="button" data-q="${k.qtd}" data-p="${k.preco}" class="${v.qtd==k.qtd && Number(v.valor)==k.preco ? "on" : ""}"><b>${k.qtd} placa${k.qtd>1?"s":""}</b>${brl(k.preco)}</button>`).join("")}</div>
+      <div class="row">
+        <label class="f"><span>Placas</span><input class="in num" name="qtd" type="number" min="1" value="${v.qtd || 1}"></label>
+        <div><label class="f"><span>Cor</span></label>
+        <div class="seg" data-seg="cor">${["azul","preta","mista"].map(x => `<button type="button" data-val="${x}" class="${(v.cor||"azul")===x?"on":""}">${x[0].toUpperCase()+x.slice(1)}</button>`).join("")}</div></div>
+      </div>
+      <div class="row hide" id="mistaBox">
+        <label class="f"><span>Quantas azuis</span><input class="in num" name="qAzul" type="number" min="0" value="${qA0}"></label>
+        <label class="f"><span>Quantas pretas</span><input class="in num" name="qPreta" type="number" min="0" value="${qP0}"></label>
+      </div>
+      <p class="hint" id="estHint"></p>
+    </div>
+    <div class="row">
       <label class="f"><span>Valor (R$)</span><input class="in num" name="valor" inputmode="decimal" value="${String(v.valor).replace(".",",")}" required></label>
       <label class="f"><span>Custo (R$)</span><input class="in num" name="custo" inputmode="decimal" value="${String(v.custo||0).replace(".",",")}"></label>
     </div>
-    <p class="hint">Custo = quanto a empresa gastou nessa venda (placas + envio). Entra no financeiro sozinho.</p>
-    <label class="f"><span>Cor</span></label>
-    <div class="seg" data-seg="cor">${["azul","preta","mista"].map(x => `<button type="button" data-val="${x}" class="${v.cor===x?"on":""}">${x[0].toUpperCase()+x.slice(1)}</button>`).join("")}</div>
+    <p class="hint">Custo = quanto a empresa gastou nessa venda. Com placa, é calculado pelo custo médio do estoque (pode mudar à mão).</p>
     <label class="f"><span>Status</span></label>
     <div class="seg" data-seg="status">${Object.entries(ST_VENDA).map(([k,t]) => `<button type="button" data-val="${k}" class="${v.status===k?"on":""}">${t}</button>`).join("")}</div>
     <div class="row">
@@ -544,6 +587,7 @@ function abrirVenda(id, clienteId){
     </div>
     <label class="f"><span>Observação</span><textarea class="in" name="obs" placeholder="Endereço de entrega, combinado, etc.">${esc(v.obs||"")}</textarea></label>`,
   async f => {
+    if (!servSel().length) { toast("Marque o que foi feito"); throw new Error("sem serviço"); }
     const nomeEmp = f.empresa.value.trim();
     let cli = clientes.find(x => x.empresa.trim().toLowerCase() === nomeEmp.toLowerCase());
     const status = segVal("status");
@@ -552,7 +596,9 @@ function abrirVenda(id, clienteId){
       google_link: G ? G.maps || null : null, segmento: G ? G.type || null : null, obs: G && G.address ? "Endereço: " + G.address : null,
       status: status === "cancelado" ? "negociando" : "cliente" });
     else if (status !== "cancelado" && ["lead","negociando","perdido"].includes(cli.status)) await salvar("clientes", { status: "cliente" }, cli.id);
-    await salvar("vendas", { cliente_id: cli.id, qtd: +f.qtd.value || 1, valor: num(f.valor.value), custo: num(f.custo.value), cor: segVal("cor"), status, data: f.data.value, vendedor_id: f.vendedor_id.value, canal: f.canal.value, pagamento: f.pagamento.value, obs: f.obs.value.trim() || null }, id);
+    const pl = placas();
+    const venda = await salvar("vendas", { cliente_id: cli.id, servicos: servSel(), qtd: pl.total, valor: num(f.valor.value), custo: num(f.custo.value), cor: pl.total ? pl.cor : null, status, data: f.data.value, vendedor_id: f.vendedor_id.value, canal: f.canal.value, pagamento: f.pagamento.value, obs: f.obs.value.trim() || null }, id);
+    await baixaEstoque(venda, status === "cancelado" ? {} : pl.porCor);
     return id ? "Venda atualizada" : "Venda registrada 🎉";
   }, id && me.papel === "admin" ? () => excluir("vendas", id) : null);
   const f = $("#dlg form");
@@ -570,10 +616,51 @@ function abrirVenda(id, clienteId){
     }
   });
   if (c) $("#vincBox").innerHTML = cartaoCliente(c);
+  function servSel(){ return [...f.querySelectorAll("#servs button.on")].map(b => b.dataset.sv); }
+  function placas(){
+    if (!servSel().includes("placa")) return { total: 0, cor: null, porCor: {} };
+    const cor = segVal("cor") || "azul";
+    if (cor === "mista") { const a = Math.max(0, +f.qAzul.value || 0), p = Math.max(0, +f.qPreta.value || 0); return { total: a + p, cor, porCor: { azul: a, preta: p } }; }
+    const q = Math.max(1, +f.qtd.value || 1); return { total: q, cor, porCor: { [cor]: q } };
+  }
+  function recalcular(){
+    const temPlaca = servSel().includes("placa"), cor = segVal("cor");
+    $("#blocoPlaca").classList.toggle("hide", !temPlaca);
+    $("#mistaBox").classList.toggle("hide", cor !== "mista");
+    f.qtd.readOnly = cor === "mista";
+    const pl = placas();
+    if (cor === "mista") f.qtd.value = pl.total;
+    const est = ["azul","preta"].map(c => { const pr = prodCor(c); if (!pr) return null; const n = saldo(pr.id) + baixaDe(c); return `${n} ${n === 1 ? c : (c === "azul" ? "azuis" : "pretas")}`; }).filter(Boolean);
+    $("#estHint").textContent = est.length ? "Em estoque: " + est.join(" · ") + ". A baixa é automática ao salvar." : "";
+    if (!custoManual) {
+      const c = Object.entries(pl.porCor).reduce((a, [cr, q]) => { const pr = prodCor(cr); return a + (pr ? q * custoMedio(pr.id) : 0); }, 0);
+      f.custo.value = (Math.round(c * 100) / 100).toFixed(2).replace(".", ",");
+    }
+  }
+  f.querySelectorAll("#servs button").forEach(b => b.onclick = () => { b.classList.toggle("on"); recalcular(); });
+  f.custo.addEventListener("input", () => { custoManual = true; });
+  f.qtd.addEventListener("input", () => { custoManual = false; recalcular(); });
+  f.qAzul.addEventListener("input", () => { custoManual = false; recalcular(); });
+  f.qPreta.addEventListener("input", () => { custoManual = false; recalcular(); });
+  $("#dlg")._onSeg = () => { custoManual = false; recalcular(); };
   f.querySelectorAll(".kits button").forEach(b => b.onclick = () => {
     f.querySelectorAll(".kits button").forEach(x => x.classList.toggle("on", x === b));
     f.qtd.value = b.dataset.q; f.valor.value = String(b.dataset.p).replace(".",",");
+    if (segVal("cor") === "mista") { f.qAzul.value = b.dataset.q; f.qPreta.value = 0; }
+    custoManual = false; recalcular();
   });
+  recalcular();
+}
+
+/* baixa automática do estoque de uma venda (refaz a cada edição) */
+async function baixaEstoque(venda, porCor){
+  try {
+    const { error } = await sb.from("movimentos").delete().eq("venda_id", venda.id);
+    if (error) throw error;
+    const linhas = Object.entries(porCor || {}).filter(([, q]) => q > 0).map(([cor, q]) => { const pr = prodCor(cor); return pr && {
+      produto_id: pr.id, tipo: "saida", qtd: -q, custo_unit: Math.round(custoMedio(pr.id) * 100) / 100, venda_id: venda.id, data: venda.data, obs: "Venda" }; }).filter(Boolean);
+    if (linhas.length) { const r = await sb.from("movimentos").insert(linhas); if (r.error) throw r.error; }
+  } catch (e) { toast("Venda salva, mas a baixa do estoque falhou: " + e.message); }
 }
 
 /* ===================== CLIENTES ===================== */
@@ -618,7 +705,7 @@ function abrirCliente(id){
     <div class="seg" data-seg="status">${Object.entries(ST_CLI).map(([k,t]) => `<button type="button" data-val="${k}" class="${c.status===k?"on":""}">${t}</button>`).join("")}</div>
     <label class="f"><span>Responsável</span><select class="in" name="vendedor_id">${equipe.filter(p => p.ativo || p.id === c.vendedor_id).map(p => `<option value="${p.id}" ${p.id===c.vendedor_id?"selected":""}>${esc(p.nome||p.email)}</option>`).join("")}</select></label>
     <label class="f"><span>Observação</span><textarea class="in" name="obs" placeholder="Próximo passo, melhor horário…">${esc(c.obs||"")}</textarea></label>
-    ${hist.length ? `<div class="hist"><div><span>Compras</span><span class="num">${brl(soma(vendasValidas(hist), v=>v.valor))}</span></div>${hist.map(v => `<div><span>${v.data.split("-").reverse().join("/")} · ${v.qtd} placa${v.qtd>1?"s":""} · ${ST_VENDA[v.status]}</span><span class="num">${brl(v.valor)}</span></div>`).join("")}</div>` : ""}`,
+    ${hist.length ? `<div class="hist"><div><span>Compras</span><span class="num">${brl(soma(vendasValidas(hist), v=>v.valor))}</span></div>${hist.map(v => `<div><span>${v.data.split("-").reverse().join("/")} · ${esc(servTxt(v))} · ${ST_VENDA[v.status]}</span><span class="num">${brl(v.valor)}</span></div>`).join("")}</div>` : ""}`,
   async f => {
     const dados = {}; ["empresa","contato","telefone","cidade","segmento","email","google_link","obs","vendedor_id"].forEach(k => dados[k] = f[k].value.trim() || null);
     dados.status = segVal("status");
@@ -652,6 +739,9 @@ function telaFin(){
   const catArr = Object.entries(cats).sort((a,b) => b[1]-a[1]);
   const maxC = Math.max(1, ...catArr.map(x => x[1]));
   const margem = n.fat ? Math.round(n.resultado / (n.fat + n.entradas) * 100) : 0;
+  const fixAtivos = fixos.filter(x => x.ativo);
+  const lancFixo = fid => lanc.find(l => l.custo_fixo_id === fid && l.data.startsWith(mes));
+  const pendFix = fixAtivos.filter(cf => !lancFixo(cf.id));
   $("#view").innerHTML = `
     <div class="top"><h2>Financeiro</h2>${seletorMes()}<button class="btn ghost sm" id="csv">Exportar</button></div>
     <div class="grid kpis">
@@ -670,12 +760,31 @@ function telaFin(){
             <div class="v num" style="color:${l.tipo==="entrada"?"var(--ok)":"var(--ink)"}">${l.tipo==="entrada"?"+":"−"} ${brl(l.valor)}</div></div>`; }).join("") : `<div class="empty"><b>Nada lançado em ${nomeMes(mes)}</b>Registre custos, despesas, investimentos e outras entradas.</div>`}</div>
         <p class="hint" style="margin-top:8px">As vendas entram sozinhas no faturamento e o custo de cada venda entra em Custos.</p>
       </div>
+      <div>
+      <div class="card" style="margin-bottom:14px"><h3>Custos fixos da empresa <small>${brl(soma(fixAtivos, x => x.valor))}/mês</small></h3>
+        ${fixAtivos.length ? fixAtivos.map(cf => { const l = lancFixo(cf.id); return `<div class="cfx"><div><b data-cf="${cf.id}">${esc(cf.nome)}</b><small>${esc([cf.categoria, cf.dia ? "vence dia " + cf.dia : ""].filter(Boolean).join(" · "))}</small></div><span class="num">${brl(cf.valor)}</span>${l ? `<span class="pill p-pago" data-lanc="${l.id}" style="cursor:pointer">${l.pago ? "Pago" : "Lançado"}</span>` : `<button class="btn sm" data-lancar="${cf.id}">Lançar</button>`}</div>`; }).join("") : `<p class="hint">Cadastre as contas que se repetem todo mês (aluguel, sistemas, internet, contador…). Depois é só lançar cada mês com 1 toque.</p>`}
+        <div class="qa"><button class="btn ghost sm" id="novoFixo">+ Custo fixo</button>${pendFix.length > 1 ? `<button class="btn sm" id="lancarTodos">Lançar os ${pendFix.length} do mês</button>` : ""}</div>
+      </div>
       <div class="card"><h3>Para onde foi o dinheiro <small>${nomeMes(mes)}</small></h3>
         ${catArr.length ? catArr.map(([k,v]) => `<div class="hb"><div><b>${esc(k)}</b><span class="num">${brl(v)}</span></div><div class="tr"><i style="width:${v/maxC*100}%;background:#F59E0B"></i></div></div>`).join("") : `<p class="hint">Sem saídas neste mês.</p>`}
+        ${n.compras ? `<p class="hint" style="margin-top:12px">Compras de estoque no mês: <b>${brl(n.compras)}</b>. Elas não entram no resultado na hora: o custo de cada placa entra quando ela é vendida.</p>` : ""}
+      </div>
       </div>
     </div>`;
   ligarMes(); ligarLinhas();
   document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { F.lTipo = b.dataset.t; telaFin(); });
+  document.querySelectorAll("[data-cf]").forEach(b => b.onclick = () => abrirFixo(+b.dataset.cf));
+  $("#novoFixo").onclick = () => abrirFixo();
+  const lancar = async lista => {
+    const ult = new Date(+mes.slice(0,4), +mes.slice(5,7), 0).getDate();
+    try {
+      for (const cf of lista) await salvar("lancamentos", { tipo: "despesa", categoria: cf.categoria || "Custos fixos", descricao: cf.nome, valor: cf.valor,
+        data: mes + "-" + String(Math.min(cf.dia || 1, ult)).padStart(2, "0"), pago: false, custo_fixo_id: cf.id });
+      await carregar(); telaFin(); toast(lista.length > 1 ? lista.length + " custos lançados" : "Custo lançado");
+    } catch (e) {}
+  };
+  document.querySelectorAll("[data-lancar]").forEach(b => b.onclick = () => { b.disabled = true; lancar(fixAtivos.filter(x => x.id === +b.dataset.lancar)); });
+  const lt = $("#lancarTodos"); if (lt) lt.onclick = () => { lt.disabled = true; lancar(pendFix); };
   $("#csv").onclick = () => csv(`financeiro-${mes}.csv`, ["Data","Tipo","Categoria","Descrição","Valor","Pago","Lançado por"],
     [...n.vs.map(v => [v.data, "Venda", "Vendas", "Venda " + ((cliente(v.cliente_id)||{}).empresa || ""), v.valor, v.status !== "pendente" ? "sim" : "não", nomeVend(v.vendedor_id)]),
      ...n.vs.filter(v => Number(v.custo)).map(v => [v.data, "Custo", "Custo das vendas", "Custo venda " + ((cliente(v.cliente_id)||{}).empresa || ""), -v.custo, "sim", nomeVend(v.vendedor_id)]),
@@ -704,6 +813,100 @@ function abrirLanc(id){
     const usadas = lanc.filter(x => x.tipo === t).map(x => x.categoria).filter(Boolean);
     $("#dlCat").innerHTML = [...new Set([...CATS[t], ...usadas])].map(c => `<option value="${esc(c)}">`).join(""); };
   $("#dlg")._onSeg = atual; atual();
+}
+
+function abrirFixo(id){
+  const cf = fixos.find(x => x.id === id) || { ativo: true };
+  modal(id ? "Editar custo fixo" : "Novo custo fixo", `
+    <label class="f"><span>Nome</span><input class="in" name="nome" required value="${esc(cf.nome||"")}" placeholder="Ex.: Aluguel, Internet, Contador"></label>
+    <div class="row">
+      <label class="f"><span>Valor por mês (R$)</span><input class="in num" name="valor" inputmode="decimal" required value="${cf.valor != null ? String(cf.valor).replace(".",",") : ""}" placeholder="0,00"></label>
+      <label class="f"><span>Vence dia</span><input class="in num" name="dia" type="number" min="1" max="31" value="${cf.dia||""}" placeholder="10"></label>
+    </div>
+    <label class="f"><span>Categoria</span><input class="in" name="categoria" list="dlCatF" value="${esc(cf.categoria||"")}" placeholder="Escolha ou digite"></label>
+    <datalist id="dlCatF">${[...new Set([...CATS.despesa, "Aluguel", ...fixos.map(x => x.categoria).filter(Boolean)])].map(c => `<option value="${esc(c)}">`).join("")}</datalist>
+    <label class="check"><input type="checkbox" name="ativo" ${cf.ativo?"checked":""}> Ativo (aparece todo mês)</label>`,
+  async f => {
+    await salvar("custos_fixos", { nome: f.nome.value.trim(), valor: num(f.valor.value), dia: +f.dia.value || null, categoria: f.categoria.value.trim() || null, ativo: f.ativo.checked }, id);
+    return id ? "Custo fixo atualizado" : "Custo fixo cadastrado";
+  }, id && me.papel === "admin" ? () => excluir("custos_fixos", id) : null);
+}
+
+/* ===================== ESTOQUE ===================== */
+function telaEstoque(){
+  const ativos = produtos.filter(p => p.ativo);
+  const val = p => Math.max(0, saldo(p.id)) * custoMedio(p.id);
+  const baixos = ativos.filter(p => saldo(p.id) <= p.minimo);
+  const compras = movs.filter(m => m.tipo === "entrada" && m.data.startsWith(mes));
+  const lista = movs.filter(m => m.data.startsWith(mes));
+  const nomeProd = id => (produtos.find(p => p.id === id) || {}).nome || "—";
+  const descMov = m => { if (m.venda_id) { const v = vendas.find(x => x.id === m.venda_id); const c = v && cliente(v.cliente_id); return "Venda · " + (c ? c.empresa : "—"); } return (m.tipo === "entrada" ? "Compra" : "Ajuste") + (m.obs ? " · " + m.obs : ""); };
+  $("#view").innerHTML = `
+    <div class="top"><h2>Estoque</h2>${seletorMes()}<button class="btn ghost sm" id="novoProd">+ Produto</button></div>
+    <div class="grid kpis">
+      <div class="card kpi"><small>Itens em estoque</small><b class="num">${soma(ativos, p => Math.max(0, saldo(p.id)))}</b><em>${ativos.length} produto${ativos.length!==1?"s":""}</em></div>
+      <div class="card kpi"><small>Valor do estoque</small><b class="num">${brl(soma(ativos, val))}</b><em>Pelo custo médio de compra</em></div>
+      <div class="card kpi"><small>Compras em ${nomeMes(mes)}</small><b class="num">${brl(soma(compras, m => m.qtd * m.custo_unit))}</b><em>${soma(compras, m => m.qtd)} itens comprados</em></div>
+      <div class="card kpi ${baixos.length ? "neg" : "pos"}"><small>Para repor</small><b class="num">${baixos.length}</b><em>${baixos.length ? baixos.map(p => esc(p.nome)).join(", ") : "Tudo acima do mínimo"}</em></div>
+    </div>
+    <div class="prods">${ativos.map(p => { const sd = saldo(p.id), cm = custoMedio(p.id); return `<div class="card prod">
+      <h4 data-prod="${p.id}"><span>${p.cor && CORES[p.cor] ? `<i class="dot" style="background:${CORES[p.cor]}"></i>` : ""}${esc(p.nome)}</span>${sd <= p.minimo ? `<span class="pill p-cancelado">Repor</span>` : `<span class="pill p-pago">OK</span>`}</h4>
+      <div class="sal num">${sd}<small>un.</small></div>
+      <p>Custo médio ${brl(cm)} · valor ${brl(Math.max(0, sd) * cm)} · mínimo ${p.minimo}</p>
+      <div class="qa"><button class="btn sm" data-ent="${p.id}">+ Entrada</button><button class="btn ghost sm" data-aj="${p.id}">Ajuste</button></div></div>`; }).join("") || `<div class="empty"><b>Nenhum produto</b>Cadastre em “+ Produto”.</div>`}</div>
+    <div class="card" style="padding:0"><h3 style="padding:16px 16px 0">Movimentações <small>${nomeMes(mes)}</small></h3>
+      <div class="list" style="border:0;border-radius:0">${lista.length ? lista.map(m => { const d = dia(m.data); return `<div class="li lf" ${m.venda_id ? `data-venda="${m.venda_id}"` : `data-mov="${m.id}"`}>
+        <div class="dt"><b>${d.d}</b>${d.m}</div>
+        <div style="min-width:0"><div class="t">${esc(nomeProd(m.produto_id))}</div><div class="s">${esc(descMov(m))}</div></div>
+        <span class="pill ${m.tipo === "entrada" ? "p-pago" : m.tipo === "saida" ? "p-enviado" : "p-custo"} st">${{entrada:"Entrada",saida:"Saída",ajuste:"Ajuste"}[m.tipo]}</span>
+        <div class="v num ${m.qtd > 0 ? "q-pos" : "q-neg"}">${m.qtd > 0 ? "+" : ""}${m.qtd}${m.tipo === "entrada" ? `<div class="s" style="text-align:right">${brl(m.qtd * m.custo_unit)}</div>` : ""}</div></div>`; }).join("") : `<div class="empty"><b>Sem movimentações em ${nomeMes(mes)}</b>Registre a compra de placas em “Entrada de estoque”. As vendas com placa dão baixa sozinhas.</div>`}</div>
+    </div>`;
+  ligarMes(); ligarLinhas();
+  $("#novoProd").onclick = () => abrirProduto();
+  document.querySelectorAll("[data-prod]").forEach(b => b.onclick = () => abrirProduto(+b.dataset.prod));
+  document.querySelectorAll("[data-ent]").forEach(b => b.onclick = () => abrirMov("entrada", null, +b.dataset.ent));
+  document.querySelectorAll("[data-aj]").forEach(b => b.onclick = () => abrirMov("ajuste", null, +b.dataset.aj));
+  document.querySelectorAll("[data-mov]").forEach(b => b.onclick = () => abrirMov(null, +b.dataset.mov));
+}
+function abrirMov(tipo, id, produtoId){
+  const m = movs.find(x => x.id === id) || { tipo: tipo || "entrada", produto_id: produtoId || (produtos.find(p => p.ativo) || {}).id, data: hoje(), qtd: "", custo_unit: 0 };
+  const ent = m.tipo === "entrada";
+  if (!produtos.some(p => p.ativo)) { toast("Cadastre um produto primeiro"); return; }
+  modal(id ? "Editar movimentação" : ent ? "Entrada de estoque" : "Ajuste de estoque", `
+    <label class="f"><span>Produto</span><select class="in" name="produto_id">${produtos.filter(p => p.ativo || p.id === m.produto_id).map(p => `<option value="${p.id}" ${p.id===m.produto_id?"selected":""}>${esc(p.nome)} (saldo ${saldo(p.id)})</option>`).join("")}</select></label>
+    ${ent ? `<div class="row">
+      <label class="f"><span>Quantidade comprada</span><input class="in num" name="qtd" type="number" min="1" required value="${m.qtd}"></label>
+      <label class="f"><span>Valor total pago (R$)</span><input class="in num" name="total" inputmode="decimal" required value="${m.qtd ? String(Math.round(m.qtd * m.custo_unit * 100) / 100).replace(".",",") : ""}" placeholder="0,00"></label>
+    </div><p class="hint" id="unitHint">Inclua frete e taxas da compra para o custo ficar certo.</p>` : `
+      <label class="f"><span>Quantidade (use negativo para tirar)</span><input class="in num" name="qtd" type="number" required value="${m.qtd}" placeholder="Ex.: -2 (quebrou) ou 5 (achei)"></label>`}
+    <div class="row">
+      <label class="f"><span>Data</span><input class="in" name="data" type="date" required value="${m.data}"></label>
+      <label class="f"><span>${ent ? "Fornecedor / obs." : "Motivo"}</span><input class="in" name="obs" value="${esc(m.obs||"")}" placeholder="${ent ? "Ex.: Fornecedor X" : "Ex.: placa com defeito"}"></label>
+    </div>`,
+  async f => {
+    const q = parseInt(f.qtd.value, 10);
+    if (!q || (ent && q < 1)) { toast("Informe a quantidade"); throw new Error("qtd"); }
+    await salvar("movimentos", { produto_id: +f.produto_id.value, tipo: m.tipo, qtd: q, custo_unit: ent ? Math.round(num(f.total.value) / q * 10000) / 10000 : 0, data: f.data.value, obs: f.obs.value.trim() || null }, id);
+    return ent ? "Entrada registrada" : "Ajuste registrado";
+  }, id && me.papel === "admin" ? () => excluir("movimentos", id) : null);
+  const f = $("#dlg form");
+  if (ent) { const up = () => { const q = +f.qtd.value, t = num(f.total.value); $("#unitHint").textContent = q && t ? `Custo por unidade: ${brl(t / q)}. Inclua frete e taxas da compra.` : "Inclua frete e taxas da compra para o custo ficar certo."; }; f.qtd.oninput = up; f.total.oninput = up; up(); }
+}
+function abrirProduto(id){
+  const p = produtos.find(x => x.id === id) || { ativo: true, minimo: 5, cor: "" };
+  modal(id ? "Editar produto" : "Novo produto", `
+    <label class="f"><span>Nome</span><input class="in" name="nome" required value="${esc(p.nome||"")}" placeholder="Ex.: Placa NFC Google azul"></label>
+    <div class="row">
+      <label class="f"><span>Estoque mínimo</span><input class="in num" name="minimo" type="number" min="0" value="${p.minimo}"></label>
+      <label class="f"><span>Baixa automática nas vendas</span><select class="in" name="cor"><option value="">Não</option><option value="azul" ${p.cor==="azul"?"selected":""}>Placas azuis</option><option value="preta" ${p.cor==="preta"?"selected":""}>Placas pretas</option></select></label>
+    </div>
+    <label class="check"><input type="checkbox" name="ativo" ${p.ativo?"checked":""}> Ativo</label>`,
+  async f => {
+    const cor = f.cor.value || null;
+    if (cor && produtos.some(x => x.id !== id && x.ativo && x.cor === cor)) { toast("Já existe um produto ativo com baixa das placas " + cor + "s"); throw new Error("cor"); }
+    await salvar("produtos", { nome: f.nome.value.trim(), minimo: +f.minimo.value || 0, cor, ativo: f.ativo.checked }, id);
+    return id ? "Produto atualizado" : "Produto cadastrado";
+  }, id && me.papel === "admin" ? () => excluir("produtos", id) : null);
 }
 
 /* ===================== EQUIPE ===================== */
