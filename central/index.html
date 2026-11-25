@@ -183,6 +183,7 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .cfx:first-of-type{border-top:0}
 .cfx b{display:block;font-size:13.5px;cursor:pointer} .cfx small{font-size:12px;color:var(--muted)}
 .q-pos{color:var(--ok)} .q-neg{color:var(--bad)}
+.rolagem{max-height:372px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -479,6 +480,7 @@ function painel(){
   const max = Math.max(1, ...meses.map(m => Math.max(m.fat + m.entradas, m.saidas)));
   const porVend = equipe.map(p => ({ nome:p.nome || p.email, v: soma(n.vs.filter(v => v.vendedor_id === p.id), v => v.valor), q: n.vs.filter(v => v.vendedor_id === p.id).length })).filter(x => x.q).sort((a,b) => b.v - a.v);
   const maxV = Math.max(1, ...porVend.map(x => x.v));
+  const doMes = vendas.filter(v => v.data.startsWith(mes));
   const funil = Object.keys(ST_CLI).map(k => ({ k, q: clientes.filter(c => c.status === k).length }));
   const maxF = Math.max(1, ...funil.map(f => f.q));
   $("#view").innerHTML = `
@@ -499,8 +501,8 @@ function painel(){
       </div>
     </div>
     <div class="grid two">
-      <div class="card"><h3>Últimas vendas <a class="link" data-go="vendas">Ver todas</a></h3>
-        ${vendas.length ? `<div class="list" style="border:0">${vendas.slice(0,6).map(linhaVenda).join("")}</div>` : `<p class="hint">Registre a primeira venda no botão <b>Nova venda</b>.</p>`}
+      <div class="card"><h3>Clientes do mês <small>${nomeMes(mes)} · ${doMes.length} venda${doMes.length!==1?"s":""}</small><a class="link" data-go="clientes">Ver todos</a></h3>
+        ${doMes.length ? `<div class="list rolagem" style="border:0">${doMes.map(linhaVenda).join("")}</div>` : `<p class="hint">Nenhuma venda em ${nomeMes(mes)}. Registre no botão <b>Nova venda</b>.</p>`}
       </div>
       <div class="card"><h3>Carteira de clientes <a class="link" data-go="clientes">Abrir</a></h3>
         ${funil.map(f => `<div class="hb"><div><b>${ST_CLI[f.k]}</b><span>${f.q}</span></div><div class="tr"><i style="width:${f.q/maxF*100}%;background:var(--${{lead:"brand",negociando:"warn",cliente:"ok",perdido:"bad"}[f.k]})"></i></div></div>`).join("")}
