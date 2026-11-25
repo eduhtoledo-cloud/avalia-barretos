@@ -283,7 +283,7 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .mini small{display:block;font-size:11.5px;color:var(--muted)} .mini b{font-size:17px}
 .privado .num,.privado .gk b,.privado .bigv,.privado .tk b,.privado .rv .r b,.privado .mini b{filter:blur(8px)}
 @media (max-width:1080px){ .d2,.d3{grid-template-columns:1fr} }
-@media (max-width:820px){ .mini[style*='repeat(4']{grid-template-columns:1fr 1fr!important} .dhead h2{font-size:20px} .gk b{font-size:21px} .gk{min-height:104px;padding:14px} .periodos{width:100%} .periodos button{padding:6px 9px} }
+@media (max-width:820px){ .mini[style*='repeat(4'],.mini[style*='repeat(5']{grid-template-columns:1fr 1fr!important} #cresc .xl span{font-size:10px} .dhead h2{font-size:20px} .gk b{font-size:21px} .gk{min-height:104px;padding:14px} .periodos{width:100%} .periodos button{padding:6px 9px} }
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -377,7 +377,7 @@ const ICON = {
 const K = window.CONFIG || { kits: [] };
 const S = window.CENTRAL || {};
 let sb = null, user = null, me = null;
-let equipe = [], clientes = [], vendas = [], lanc = [], produtos = [], movs = [], fixos = [], hist = [], ativs = [];
+let equipe = [], clientes = [], vendas = [], lanc = [], produtos = [], movs = [], fixos = [], hist = [], ativs = [], EMP = null;
 let view = "painel", mes = mesAtual();
 const F = { vBusca:"", vStatus:"", vVend:"", vServ:"", cBusca:"", cStatus:"", cModo:"carteira", rPer:"semana", crmVend:"", crmBusca:"", lTipo:"" };
 
@@ -504,7 +504,7 @@ function telaNovaSenha(){
 
 /* ===================== dados ===================== */
 async function carregar(){
-  const [p, c, v, l, pr, mv, fx, ah, at] = await Promise.all([
+  const [p, c, v, l, pr, mv, fx, ah, at, em] = await Promise.all([
     sb.from("perfis").select("*").order("nome"),
     sb.from("clientes").select("*").order("empresa"),
     sb.from("vendas").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
@@ -513,9 +513,10 @@ async function carregar(){
     sb.from("movimentos").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
     sb.from("custos_fixos").select("*").order("nome"),
     sb.from("avaliacoes_hist").select("*").order("data"),
-    sb.from("atividades").select("*").order("quando")
+    sb.from("atividades").select("*").order("quando"),
+    sb.from("empresa").select("*").eq("id", 1).maybeSingle()
   ]);
-  hist = (ah.data || []); ativs = (at.data || []);
+  hist = (ah.data || []); ativs = (at.data || []); EMP = em.data || null;
   const err = [p,c,v,l,pr,mv,fx,ah,at].find(x => x.error);
   if (err) toast("Erro ao carregar: " + err.error.message);
   equipe = p.data || []; clientes = c.data || []; vendas = v.data || []; lanc = l.data || [];
@@ -1000,7 +1001,7 @@ function telaFin(){
       <div class="card kpi"><small>Despesas + investimentos</small><b class="num">${brl(n.despesas + n.invest)}</b><em>Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}${aPagar ? " · a pagar " + brl(aPagar) : ""}</em></div>
       <div class="card kpi ${n.resultado >= 0 ? "pos" : "neg"}"><small>Resultado</small><b class="num">${brl(n.resultado)}</b><em>${n.fat ? "Margem " + margem + "%" : "&nbsp;"}</em></div>
     </div>
-    ${cardRetorno()}
+    ${cardCrescimento()}
     <div class="grid two">
       <div>
         <div class="seg" style="margin-bottom:12px"><button data-t="" class="${!F.lTipo?"on":""}">Todos</button>${Object.entries(TIPOS).map(([k,t]) => `<button data-t="${k}" class="${F.lTipo===k?"on":""}">${t}</button>`).join("")}</div>
@@ -1027,6 +1028,8 @@ function telaFin(){
   document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { F.lTipo = b.dataset.t; telaFin(); });
   document.querySelectorAll("[data-cf]").forEach(b => b.onclick = () => abrirFixo(+b.dataset.cf));
   ligarAvisos();
+  const be = $("#ajEmpresa"); if (be) be.onclick = abrirEmpresa;
+  ligarCresc();
   $("#novoFixo").onclick = () => abrirFixo();
   const lancar = async lista => {
     const ult = new Date(+mes.slice(0,4), +mes.slice(5,7), 0).getDate();
@@ -1318,6 +1321,88 @@ function cardRetorno(){
     <p class="hint" style="margin-top:10px">Ainda há <b class="num">${brl(valEst)}</b> em placas no estoque, já pagas. O <b>Resultado do mês</b> mostra o lucro real: ele conta só o custo das placas que foram vendidas, para a compra do estoque não ser contada duas vezes. Vendas pendentes só entram aqui quando forem pagas.</p>
   </div>`;
 }
+/* ===================== CRESCIMENTO DA EMPRESA (desde a abertura) ===================== */
+let CRESC = [];
+function cardCrescimento(){
+  const ab = (EMP && EMP.abertura ? EMP.abertura : ([...vendas.map(v => v.data), ...movs.map(m => m.data)].sort()[0] || hoje())).slice(0, 7);
+  const inv = EMP ? Number(EMP.investimento_inicial) || 0 : 0;
+  const meses = []; for (let m = ab; m <= mesAtual(); m = somaMes(m, 1)) meses.push(m);
+  let acum = 0;
+  CRESC = meses.map(ym => { const n = numerosDoMes(ym); acum += n.resultado; return { ym, fat: n.fat, lucro: n.resultado, acum, patr: inv + acum, nv: n.vs.length }; });
+  const ult = CRESC[CRESC.length - 1] || { acum: 0, patr: inv };
+  const fatTot = soma(CRESC, r => r.fat), vendasTot = soma(CRESC, r => r.nv);
+  const roi = inv ? ult.acum / inv * 100 : null;
+  // caixa: quanto do dinheiro investido já voltou de verdade
+  const recebido = soma(vendas.filter(v => !["pendente","cancelado"].includes(v.status)), v => v.valor) + soma(lanc.filter(l => l.tipo === "entrada" && l.pago), l => l.valor);
+  const saiu = soma(movs.filter(m => m.tipo === "entrada"), m => m.qtd * m.custo_unit) + soma(lanc.filter(l => l.tipo !== "entrada" && l.pago), l => l.valor);
+  const caixa = recebido - saiu, prog = saiu ? Math.min(100, recebido / saiu * 100) : 100;
+  const valEst = soma(produtos.filter(p => p.ativo), p => Math.max(0, saldo(p.id)) * custoMedio(p.id));
+  const aReceber = soma(vendas.filter(v => v.status === "pendente"), v => v.valor);
+  // gráfico: barras = faturamento do mês, linha = patrimônio (investimento + lucro acumulado)
+  const W = 600, H = 190, n = CRESC.length || 1, bw = W / n;
+  const maxV = Math.max(1, inv, ...CRESC.map(r => Math.max(r.fat, r.patr))) * 1.12;
+  const y = v => H - Math.max(0, v) / maxV * (H - 6);
+  const pts = CRESC.map((r, i) => [i * bw + bw / 2, y(r.patr)]);
+  let d = pts.length ? `M${pts[0][0]},${pts[0][1]}` : "";
+  for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], dx = (x1 - x0) / 2; d += ` C${x0 + dx},${y0} ${x1 - dx},${y1} ${x1},${y1}`; }
+  const kpi = (t, v, e, cor) => `<div><small>${t}</small><b class="num" style="${cor ? "color:" + cor : ""}">${v}</b>${e ? `<small style="margin-top:2px">${e}</small>` : ""}</div>`;
+  return `<div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <div class="chead" style="margin:0"><div class="ico">${SVG.trend}</div><div><b>Crescimento da empresa</b><small>Desde a abertura em ${nomeMes(ab)} · investimento inicial de ${brl(inv)}</small></div></div>
+      ${me.papel === "admin" ? `<button class="btn ghost sm" id="ajEmpresa" style="margin-left:auto">⚙ Abertura e investimento</button>` : ""}
+    </div>
+    <div class="mini" style="grid-template-columns:repeat(5,1fr);margin-top:0">
+      ${kpi("Investimento inicial", brl(inv), nomeMes(ab))}
+      ${kpi("Faturamento acumulado", brl(fatTot), vendasTot + " venda" + (vendasTot !== 1 ? "s" : ""))}
+      ${kpi("Lucro real acumulado", brl(ult.acum), "já descontados custos e despesas", ult.acum >= 0 ? "var(--ok)" : "var(--bad)")}
+      ${kpi("Retorno sobre o investimento", roi == null ? "—" : (roi >= 0 ? "+" : "") + String(Math.round(roi * 10) / 10).replace(".", ",") + "%", "lucro ÷ investimento", roi != null && roi < 0 ? "var(--bad)" : "var(--ok)")}
+      ${kpi("Valor da empresa hoje", brl(ult.patr), "investimento + lucro", "var(--brand)")}
+    </div>
+    <div class="area" id="cresc" style="height:auto;margin-top:16px">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:190px">
+        <line x1="0" x2="${W}" y1="${y(inv)}" y2="${y(inv)}" stroke="#94A3B8" stroke-dasharray="5 5" stroke-width="1" vector-effect="non-scaling-stroke"/>
+        ${CRESC.map((r, i) => `<rect x="${i * bw + bw * .22}" y="${y(r.fat)}" width="${bw * .56}" height="${H - y(r.fat)}" rx="4" fill="#C7D7FE"/>`).join("")}
+        ${pts.length > 1 ? `<path d="${d}" fill="none" stroke="#10B981" stroke-width="3" vector-effect="non-scaling-stroke"/>` : ""}
+        ${pts.map(([px, py]) => `<circle cx="${px}" cy="${py}" r="4" fill="#10B981" vector-effect="non-scaling-stroke"/>`).join("")}
+      </svg>
+      <div class="xl" style="justify-content:space-around">${CRESC.map(r => `<span>${nomeMes(r.ym)}</span>`).join("")}</div>
+      <div class="legend"><span><i style="background:#C7D7FE"></i>Faturamento do mês</span><span><i style="background:#10B981"></i>Valor da empresa (investimento + lucro)</span><span><i style="background:#94A3B8"></i>Investimento inicial</span></div>
+      <div class="tip" id="crescTip"></div>
+    </div>
+    <div class="list" style="margin-top:14px">
+      <div class="li" style="grid-template-columns:1fr 1fr 1fr 1fr;cursor:default;font-size:12px;color:var(--muted);font-weight:700;background:#FAFBFE"><span>Mês</span><span style="text-align:right">Faturamento</span><span style="text-align:right">Lucro do mês</span><span style="text-align:right">Lucro acumulado</span></div>
+      ${CRESC.slice().reverse().map(r => `<div class="li" style="grid-template-columns:1fr 1fr 1fr 1fr;cursor:default;font-size:13px"><b><span style="text-transform:capitalize">${nomeMes(r.ym)}</span>${r.ym === mesAtual() ? ' <span class="hint">(em andamento)</span>' : ""}</b><span class="num" style="text-align:right">${brl(r.fat)}</span><span class="num" style="text-align:right;color:${r.lucro >= 0 ? "var(--ok)" : "var(--bad)"}">${brl(r.lucro)}</span><span class="num" style="text-align:right;font-weight:800;color:${r.acum >= 0 ? "var(--ok)" : "var(--bad)"}">${brl(r.acum)}</span></div>`).join("")}
+    </div>
+    <div style="margin-top:16px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;gap:10px;flex-wrap:wrap"><b>${caixa < 0 ? `Dinheiro do investimento: faltam <span class="num">${brl(-caixa)}</span> para voltar ao caixa` : `Dinheiro do investimento já voltou ✅ · <span class="num">${brl(caixa)}</span> a mais no caixa`}</b><span class="hint">${Math.round(prog)}% já voltou</span></div>
+    <div style="height:10px;background:var(--bg);border-radius:9px;overflow:hidden"><i style="display:block;height:100%;width:${prog}%;background:${caixa >= 0 ? "var(--ok)" : "var(--brand)"};border-radius:9px"></i></div>
+    <p class="hint" style="margin-top:8px">O <b>lucro real</b> considera as vendas do mês menos o custo das placas vendidas, custos, despesas e investimentos (anúncios). O que ainda está em placas no estoque (<span class="num">${brl(valEst)}</span>) e as vendas a receber (<span class="num">${brl(aReceber)}</span>) continuam sendo da empresa: por isso o valor da empresa pode ser maior que o dinheiro em caixa.</p></div>
+  </div>`;
+}
+function ligarCresc(){
+  const el = $("#cresc"); if (!el || !CRESC.length) return;
+  const svg = el.querySelector("svg"), tip = $("#crescTip");
+  svg.onmousemove = e => {
+    const r = svg.getBoundingClientRect(), i = Math.max(0, Math.min(CRESC.length - 1, Math.floor((e.clientX - r.left) / r.width * CRESC.length))), c = CRESC[i];
+    tip.style.left = ((i + .5) / CRESC.length * r.width) + "px"; tip.style.top = (e.clientY - r.top) + "px";
+    tip.innerHTML = `<b style="text-transform:capitalize">${nomeMes(c.ym)}</b><br>Faturamento ${brl(c.fat)}<br>Lucro do mês ${brl(c.lucro)}<br>Valor da empresa ${brl(c.patr)}`; tip.style.opacity = 1;
+  };
+  svg.onmouseleave = () => tip.style.opacity = 0;
+}
+function abrirEmpresa(){
+  const e = EMP || { abertura: hoje(), investimento_inicial: 0 };
+  modal("Abertura e investimento inicial", `
+    <div class="row">
+      <label class="f"><span>Mês de abertura</span><input class="in" name="abertura" type="month" required value="${(e.abertura || hoje()).slice(0, 7)}"></label>
+      <label class="f"><span>Investimento inicial (R$)</span><input class="in num" name="inv" inputmode="decimal" required value="${String(e.investimento_inicial).replace(".", ",")}"></label>
+    </div>
+    <p class="hint">É o dinheiro que os sócios colocaram para começar (ex.: a primeira compra de placas). Serve de base para o crescimento e o retorno sobre o investimento.</p>`,
+  async f => {
+    const { error } = await sb.from("empresa").upsert({ id: 1, abertura: f.abertura.value + "-01", investimento_inicial: num(f.inv.value), atualizado_em: new Date().toISOString() });
+    if (error) { toast("Não salvou: " + error.message); throw error; }
+    return "Dados da empresa atualizados";
+  });
+}
+
 /* ===================== AVISOS / LEMBRETES ===================== */
 const localDT = d => new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
 const fmtDT = iso => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
