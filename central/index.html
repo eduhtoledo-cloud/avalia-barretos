@@ -161,6 +161,17 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .qa{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .qa a{flex:1;min-width:120px;text-decoration:none}
 
+.ac{position:relative}
+.acbox{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(15,23,42,.14);z-index:5;max-height:300px;overflow:auto;padding:4px 0}
+.acbox h6{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 12px 4px}
+.acbox button{display:block;width:100%;text-align:left;padding:9px 12px;line-height:1.3}
+.acbox button:hover,.acbox button.sel{background:var(--brand-soft)}
+.acbox button b{display:block;font-size:13.5px;font-weight:700}
+.acbox button small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acbox p{padding:10px 12px;font-size:12.5px;color:var(--muted)}
+.vinc{display:flex;gap:10px;align-items:flex-start;margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:#0B6B3D;font-size:12.5px;line-height:1.4}
+.vinc b{color:var(--ink)} .vinc a{color:var(--brand);font-weight:700;white-space:nowrap}
+.vinc.old{background:var(--brand-soft);color:var(--brand-h)}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -493,11 +504,13 @@ function telaVendas(){
 }
 
 function abrirVenda(id, clienteId){
+  let G = null;   // empresa escolhida no Google (cliente novo)
   const v = vendas.find(x => x.id === id) || { data: hoje(), qtd: 1, cor: "azul", valor: (K.kits[0]||{}).preco || 0, custo: 0, canal: "WhatsApp", pagamento: "Pix", status: "pago", vendedor_id: me.id, cliente_id: clienteId || null };
   const c = cliente(v.cliente_id);
   modal(id ? "Editar venda" : "Nova venda", `
-    <label class="f"><span>Empresa (cliente)</span><input class="in" name="empresa" list="dlEmp" required value="${esc(c ? c.empresa : "")}" placeholder="Digite para buscar ou cadastrar" autocomplete="off"></label>
-    <datalist id="dlEmp">${clientes.map(x => `<option value="${esc(x.empresa)}">`).join("")}</datalist>
+    <label class="f"><span>Empresa (cliente)</span></label>
+    <div class="ac"><input class="in" name="empresa" required value="${esc(c ? c.empresa : "")}" placeholder="Digite o nome — busca na carteira e no Google" autocomplete="off"></div>
+    <div id="vincBox"></div>
     <div id="novoCli" class="row ${c ? "hide" : ""}">
       <label class="f"><span>WhatsApp do cliente</span><input class="in" name="telefone" inputmode="tel" placeholder="(17) 99999-9999"></label>
       <label class="f"><span>Cidade</span><input class="in" name="cidade" placeholder="Barretos"></label>
@@ -525,13 +538,29 @@ function abrirVenda(id, clienteId){
     const nomeEmp = f.empresa.value.trim();
     let cli = clientes.find(x => x.empresa.trim().toLowerCase() === nomeEmp.toLowerCase());
     const status = segVal("status");
-    if (!cli) cli = await salvar("clientes", { empresa: nomeEmp, telefone: f.telefone.value.trim() || null, cidade: f.cidade.value.trim() || null, status: status === "cancelado" ? "negociando" : "cliente" });
+    if (!cli && G && G.maps) cli = clientes.find(x => x.google_link === G.maps);
+    if (!cli) cli = await salvar("clientes", { empresa: nomeEmp, telefone: f.telefone.value.trim() || null, cidade: f.cidade.value.trim() || null,
+      google_link: G ? G.maps || null : null, segmento: G ? G.type || null : null, obs: G && G.address ? "Endereço: " + G.address : null,
+      status: status === "cancelado" ? "negociando" : "cliente" });
     else if (status !== "cancelado" && ["lead","negociando","perdido"].includes(cli.status)) await salvar("clientes", { status: "cliente" }, cli.id);
     await salvar("vendas", { cliente_id: cli.id, qtd: +f.qtd.value || 1, valor: num(f.valor.value), custo: num(f.custo.value), cor: segVal("cor"), status, data: f.data.value, vendedor_id: f.vendedor_id.value, canal: f.canal.value, pagamento: f.pagamento.value, obs: f.obs.value.trim() || null }, id);
     return id ? "Venda atualizada" : "Venda registrada 🎉";
   }, id && me.papel === "admin" ? () => excluir("vendas", id) : null);
   const f = $("#dlg form");
-  f.empresa.oninput = () => $("#novoCli").classList.toggle("hide", clientes.some(x => x.empresa.trim().toLowerCase() === f.empresa.value.trim().toLowerCase()) || !f.empresa.value.trim());
+  const existe = () => clientes.some(x => x.empresa.trim().toLowerCase() === f.empresa.value.trim().toLowerCase());
+  const atualiza = () => $("#novoCli").classList.toggle("hide", existe() || !f.empresa.value.trim());
+  buscaEmpresa(f.empresa, {
+    locais: true,
+    aoDigitar: () => { G = null; $("#vincBox").innerHTML = ""; atualiza(); },
+    aoEscolher: (r) => {
+      if (r.cliente) { G = null; f.empresa.value = r.cliente.empresa; $("#vincBox").innerHTML = cartaoCliente(r.cliente); atualiza(); return; }
+      const ja = clientes.find(x => x.google_link && x.google_link === r.place.maps);
+      if (ja) { G = null; f.empresa.value = ja.empresa; $("#vincBox").innerHTML = cartaoCliente(ja); atualiza(); return; }
+      G = r.place; f.empresa.value = G.name; f.telefone.value = G.phone; f.cidade.value = G.cidade;
+      $("#vincBox").innerHTML = cartaoGoogle(G); atualiza();
+    }
+  });
+  if (c) $("#vincBox").innerHTML = cartaoCliente(c);
   f.querySelectorAll(".kits button").forEach(b => b.onclick = () => {
     f.querySelectorAll(".kits button").forEach(x => x.classList.toggle("on", x === b));
     f.qtd.value = b.dataset.q; f.valor.value = String(b.dataset.p).replace(".",",");
@@ -564,7 +593,9 @@ function abrirCliente(id){
   const tz = zap(c.telefone);
   modal(id ? c.empresa : "Novo cliente", `
     ${id ? `<div class="qa">${tz ? `<a class="btn sm" style="background:#25D366" href="${tz}" target="_blank" rel="noopener">WhatsApp</a>` : ""}${c.google_link ? `<a class="btn ghost sm" href="${esc(c.google_link)}" target="_blank" rel="noopener">Ver no Google</a>` : ""}<button type="button" class="btn ghost sm" id="vendaCli">+ Venda</button></div>` : ""}
-    <label class="f"><span>Empresa</span><input class="in" name="empresa" required value="${esc(c.empresa||"")}"></label>
+    <label class="f"><span>Empresa</span></label>
+    <div class="ac"><input class="in" name="empresa" required value="${esc(c.empresa||"")}" placeholder="Digite o nome — busca no Google" autocomplete="off"></div>
+    <div id="vincBox"></div>
     <div class="row">
       <label class="f"><span>Contato</span><input class="in" name="contato" value="${esc(c.contato||"")}" placeholder="Nome do dono/gerente"></label>
       <label class="f"><span>WhatsApp</span><input class="in" name="telefone" inputmode="tel" value="${esc(c.telefone||"")}"></label>
@@ -585,6 +616,20 @@ function abrirCliente(id){
     await salvar("clientes", dados, id);
     return id ? "Cliente atualizado" : "Cliente cadastrado";
   }, id && me.papel === "admin" ? () => excluir("clientes", id) : null);
+  const fc = $("#dlg form");
+  buscaEmpresa(fc.empresa, {
+    aoEscolher: ({ place: P }) => {
+      const outro = clientes.find(x => x.id !== id && x.google_link && x.google_link === P.maps);
+      if (outro) { $("#vincBox").innerHTML = `<div class="vinc old"><span>Essa empresa já está na carteira como <b>${esc(outro.empresa)}</b>.</span></div>`; return; }
+      fc.empresa.value = P.name;
+      if (P.phone) fc.telefone.value = P.phone;
+      if (P.cidade) fc.cidade.value = P.cidade;
+      if (P.type) fc.segmento.value = P.type;
+      if (P.maps) fc.google_link.value = P.maps;
+      if (P.address && !fc.obs.value.includes(P.address)) fc.obs.value = ("Endereço: " + P.address + "\n" + fc.obs.value).trim();
+      $("#vincBox").innerHTML = cartaoGoogle(P);
+    }
+  });
   const b = $("#vendaCli"); if (b) b.onclick = () => { $("#dlg").close(); abrirVenda(null, id); };
 }
 
@@ -674,6 +719,74 @@ function telaEquipe(){
   document.querySelectorAll("[data-papel]").forEach(s => s.onchange = async () => {
     try { await salvar("perfis", { papel: s.value }, s.dataset.papel); await carregar(); toast("Permissão alterada"); } catch(e){}
   });
+}
+
+/* ===================== busca de empresa (carteira + Google) ===================== */
+const novoToken = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+function cartaoGoogle(P){
+  return `<div class="vinc"><span>✓</span><span><b>Vinculado ao Google</b> — ${esc(P.address || P.cidade || "")}${P.count ? `<br>⭐ ${String(P.rating).replace(".",",")} · ${P.count} avaliações` : "<br>Ainda sem avaliações no Google"}${P.type ? " · " + esc(P.type) : ""}</span>${P.maps ? `<a href="${esc(P.maps)}" target="_blank" rel="noopener" style="margin-left:auto">Ver</a>` : ""}</div>`;
+}
+function cartaoCliente(c){
+  const extra = [c.cidade, c.telefone].filter(Boolean).map(esc).join(" · ");
+  return `<div class="vinc old"><span>●</span><span><b>Cliente já cadastrado</b>${extra ? " — " + extra : ""}</span></div>`;
+}
+function buscaEmpresa(input, { locais = false, aoEscolher, aoDigitar }){
+  const box = document.createElement("div"); box.className = "acbox hide"; input.parentNode.appendChild(box);
+  let token = novoToken(), req = 0, timer = null, itens = [], sel = -1;
+  const fechar = () => { box.classList.add("hide"); sel = -1; };
+  const desenhar = (loc, goo, msg) => {
+    itens = [...loc.map(c => ({ cliente: c })), ...goo.map(g => ({ google: g }))];
+    let h = "";
+    if (loc.length) h += `<h6>Na carteira</h6>` + loc.map((c, i) => `<button type="button" data-i="${i}"><b>${esc(c.empresa)}</b><small>${esc([c.cidade, ST_CLI[c.status]].filter(Boolean).join(" · "))}</small></button>`).join("");
+    if (goo.length) h += `<h6>No Google</h6>` + goo.map((g, i) => `<button type="button" data-i="${loc.length + i}"><b>${esc(g.main)}</b><small>${esc(g.sec)}</small></button>`).join("");
+    if (msg) h += `<p>${msg}</p>`;
+    box.innerHTML = h; box.classList.toggle("hide", !h);
+    box.querySelectorAll("button").forEach(b => b.onmousedown = e => { e.preventDefault(); escolher(+b.dataset.i); });
+  };
+  async function escolher(i){
+    const it = itens[i]; if (!it) return; fechar();
+    if (it.cliente) { aoEscolher({ cliente: it.cliente }); return; }
+    input.value = it.google.main; box.classList.remove("hide"); box.innerHTML = `<p>Buscando dados no Google…</p>`;
+    try {
+      const r = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(it.google.id)}?languageCode=pt-BR&sessionToken=${encodeURIComponent(token)}`, {
+        headers: { "X-Goog-Api-Key": K.googleApiKey, "X-Goog-FieldMask": "id,displayName,formattedAddress,addressComponents,rating,userRatingCount,nationalPhoneNumber,googleMapsUri,primaryTypeDisplayName" } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json(); token = novoToken();
+      const comp = d.addressComponents || [];
+      const cidade = (comp.find(c => (c.types||[]).includes("administrative_area_level_2")) || comp.find(c => (c.types||[]).includes("locality")) || {}).longText || "";
+      fechar();
+      aoEscolher({ place: { id: d.id, name: d.displayName?.text || it.google.main, address: d.formattedAddress || "", cidade,
+        phone: d.nationalPhoneNumber || "", maps: (d.googleMapsUri || "").split("&g_mp=")[0], type: d.primaryTypeDisplayName?.text || "",
+        rating: d.rating || 0, count: d.userRatingCount || 0 } });
+    } catch (e) { box.innerHTML = `<p>Não consegui puxar os dados do Google agora. Preencha à mão.</p>`; setTimeout(fechar, 2500); }
+  }
+  input.addEventListener("input", () => {
+    if (aoDigitar) aoDigitar();
+    const t = input.value.trim(); clearTimeout(timer);
+    const loc = !locais || !t ? [] : clientes.filter(c => c.empresa.toLowerCase().includes(t.toLowerCase())).slice(0, 4);
+    if (t.length < 3 || !K.googleApiKey) { desenhar(loc, []); return; }
+    desenhar(loc, [], "Buscando no Google…");
+    timer = setTimeout(async () => {
+      const my = ++req;
+      try {
+        const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", { method: "POST",
+          headers: { "Content-Type": "application/json", "X-Goog-Api-Key": K.googleApiKey },
+          body: JSON.stringify({ input: t, sessionToken: token, languageCode: "pt-BR", includedRegionCodes: ["br"] }) });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json(); if (my !== req) return;
+        const goo = (d.suggestions || []).map(s => s.placePrediction).filter(Boolean).slice(0, 5).map(p => ({
+          id: p.placeId, main: p.structuredFormat?.mainText?.text || p.text?.text || "", sec: p.structuredFormat?.secondaryText?.text || "" }));
+        desenhar(loc, goo, goo.length ? "" : "Nada encontrado no Google. Pode cadastrar à mão.");
+      } catch (e) { if (my === req) desenhar(loc, [], "Busca do Google indisponível agora. Pode cadastrar à mão."); }
+    }, 300);
+  });
+  input.addEventListener("keydown", e => {
+    const bs = box.querySelectorAll("button"); if (box.classList.contains("hide") || !bs.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + bs.length) % bs.length; bs.forEach((b, i) => b.classList.toggle("sel", i === sel)); }
+    else if (e.key === "Enter" && sel >= 0) { e.preventDefault(); escolher(+bs[sel].dataset.i); }
+    else if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); fechar(); }
+  });
+  input.addEventListener("blur", () => setTimeout(fechar, 150));
 }
 
 /* ===================== modal genérico ===================== */
