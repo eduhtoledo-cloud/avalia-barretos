@@ -283,9 +283,9 @@ const ST_VENDA = { pendente:"Pendente", pago:"Pago", enviado:"Enviado", entregue
 const ST_CLI   = { lead:"Lead", negociando:"Negociando", cliente:"Cliente", perdido:"Perdido" };
 const TIPOS    = { entrada:"Entrada", custo:"Custo", despesa:"Despesa", investimento:"Investimento" };
 const CATS = {
-  custo: ["Placas (fornecedor)","Frete / envio","Embalagem","Taxa do checkout","Impressão / adesivo"],
+  custo: ["Frete / envio ao cliente","Embalagem","Taxa do checkout (GG)","Taxa da maquininha","Impressão / adesivo"],
   despesa: ["Ferramentas e sistemas","Internet / telefone","Combustível / transporte","Pró-labore","Contador","Outros"],
-  investimento: ["Anúncios Meta","Anúncios Google","Estoque","Equipamentos","Material de divulgação"],
+  investimento: ["Anúncios Meta","Anúncios Google","Equipamentos","Material de divulgação","Cursos / consultoria"],
   entrada: ["Aporte","Venda avulsa","Outros"]
 };
 const SERVICOS = { placa:"Placa NFC", instagram:"Plaquinha Instagram", google_novo:"Google novo", google_atualizacao:"Atualização do Google" };
@@ -758,14 +758,15 @@ function telaFin(){
   const maxC = Math.max(1, ...catArr.map(x => x[1]));
   const margem = n.fat ? Math.round(n.resultado / (n.fat + n.entradas) * 100) : 0;
   const fixAtivos = fixos.filter(x => x.ativo);
+  const aPagar = soma(n.ls.filter(l => l.tipo !== "entrada" && !l.pago), l => l.valor);
   const lancFixo = fid => lanc.find(l => l.custo_fixo_id === fid && l.data.startsWith(mes));
   const pendFix = fixAtivos.filter(cf => !lancFixo(cf.id));
   $("#view").innerHTML = `
     <div class="top"><h2>Financeiro</h2>${seletorMes()}<button class="btn ghost sm" id="csv">Exportar</button></div>
     <div class="grid kpis">
-      <div class="card kpi"><small>Entradas</small><b class="num">${brl(n.fat + n.entradas)}</b><em>Vendas ${brl(n.fat)}${n.entradas ? " + outras " + brl(n.entradas) : ""}</em></div>
+      <div class="card kpi"><small>Entradas</small><b class="num">${brl(n.fat + n.entradas)}</b><em>Vendas ${brl(n.fat)}${n.entradas ? " + outras " + brl(n.entradas) : ""}${n.receber ? " · a receber " + brl(n.receber) : ""}</em></div>
       <div class="card kpi"><small>Custos</small><b class="num">${brl(n.custos)}</b><em>Das vendas ${brl(n.custoVendas)}</em></div>
-      <div class="card kpi"><small>Despesas + investimentos</small><b class="num">${brl(n.despesas + n.invest)}</b><em>Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}</em></div>
+      <div class="card kpi"><small>Despesas + investimentos</small><b class="num">${brl(n.despesas + n.invest)}</b><em>Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}${aPagar ? " · a pagar " + brl(aPagar) : ""}</em></div>
       <div class="card kpi ${n.resultado >= 0 ? "pos" : "neg"}"><small>Resultado</small><b class="num">${brl(n.resultado)}</b><em>${n.fat ? "Margem " + margem + "%" : "&nbsp;"}</em></div>
     </div>
     <div class="grid two">
@@ -826,7 +827,7 @@ function abrirLanc(id){
     await salvar("lancamentos", { tipo: segVal("tipo"), descricao: f.descricao.value.trim(), valor: num(f.valor.value), data: f.data.value, categoria: f.categoria.value.trim() || null, pago: f.pago.checked }, id);
     return id ? "Lançamento atualizado" : "Lançamento salvo";
   }, id && me.papel === "admin" ? () => excluir("lancamentos", id) : null);
-  const dicas = { custo:"Gasto direto para fazer e entregar a placa.", despesa:"Contas do dia a dia da empresa.", investimento:"Dinheiro para crescer: anúncios, estoque, equipamentos.", entrada:"Dinheiro que entrou fora das vendas registradas." };
+  const dicas = { custo:"Gasto direto das vendas que não é a placa: frete ao cliente, embalagem, taxas. Compra de placas vai em Estoque → Entrada (senão conta duas vezes).", despesa:"Contas do dia a dia da empresa.", investimento:"Dinheiro para crescer: anúncios, estoque, equipamentos.", entrada:"Dinheiro que entrou fora das vendas registradas." };
   const atual = () => { const t = segVal("tipo"); $("#tipoHint").textContent = dicas[t];
     const usadas = lanc.filter(x => x.tipo === t).map(x => x.categoria).filter(Boolean);
     $("#dlCat").innerHTML = [...new Set([...CATS[t], ...usadas])].map(c => `<option value="${esc(c)}">`).join(""); };
