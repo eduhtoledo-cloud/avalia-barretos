@@ -351,7 +351,16 @@ function telaLogin(modo = "entrar", aviso = ""){
     else r = await sb.auth.signInWithPassword({ email, password: senha });
     btn.disabled = false;
     if (r.error){
-      const m = /Invalid login/i.test(r.error.message) ? "E-mail ou senha incorretos." : /already registered/i.test(r.error.message) ? "Esse e-mail já tem acesso. Use Entrar." : r.error.message;
+      if (/not confirmed/i.test(r.error.message)){
+        $("#authMsg").innerHTML = `<div class="msg err">Falta confirmar seu e-mail. Abra o e-mail que enviamos para ${esc(email)} (veja também o spam/lixo eletrônico) e clique no link.<br><a href="#" class="link" id="reenviar">Reenviar e-mail de confirmação</a></div>`;
+        $("#reenviar").onclick = async e => {
+          e.preventDefault();
+          const x = await sb.auth.resend({ type: "signup", email, options: { emailRedirectTo: location.origin + location.pathname } });
+          $("#authMsg").innerHTML = x.error ? `<div class="msg err">Não deu para reenviar agora (${esc(x.error.message)}). Peça ao administrador para confirmar seu acesso.</div>` : `<div class="msg ok">Enviamos de novo para ${esc(email)}. Confira também o spam.</div>`;
+        };
+        return;
+      }
+      const m = /Invalid login/i.test(r.error.message) ? "E-mail ou senha incorretos." : /already registered/i.test(r.error.message) ? "Esse e-mail já tem acesso. Use Entrar." : /rate limit/i.test(r.error.message) ? "Muitas tentativas seguidas. Espere alguns minutos e tente de novo." : r.error.message;
       $("#authMsg").innerHTML = `<div class="msg err">${esc(m)}</div>`; return;
     }
     if (r.data.session) entrar(r.data.user);
