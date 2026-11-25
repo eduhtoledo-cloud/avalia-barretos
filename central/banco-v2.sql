@@ -111,3 +111,7 @@ create table if not exists public.atividades (
   criado_em timestamptz not null default now()
 );
 -- RLS: ver/criar/editar/excluir = eh_ativo(); tabela incluída no supabase_realtime
+
+-- ---------- v6: dados da empresa e layout do painel por usuário ----------
+-- empresa (id=1, abertura, investimento_inicial): ver = eh_ativo(); criar/editar = eh_admin()
+-- preferencias (user_id = auth.uid(), painel jsonb): cada um vê e edita só a própria linha

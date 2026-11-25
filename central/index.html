@@ -284,6 +284,19 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .privado .num,.privado .gk b,.privado .bigv,.privado .tk b,.privado .rv .r b,.privado .mini b{filter:blur(8px)}
 @media (max-width:1080px){ .d2,.d3{grid-template-columns:1fr} }
 @media (max-width:820px){ .mini[style*='repeat(4'],.mini[style*='repeat(5']{grid-template-columns:1fr 1fr!important} #cresc .xl span{font-size:10px} .dhead h2{font-size:20px} .gk b{font-size:21px} .gk{min-height:104px;padding:14px} .periodos{width:100%} .periodos button{padding:6px 9px} }
+.dgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;align-items:start}
+.blk{min-width:0} .blk > .card,.blk > .avisos{margin:0!important;height:100%}
+.t-p{grid-column:span 2} .t-m{grid-column:span 3} .t-g{grid-column:span 4} .t-full{grid-column:1/-1}
+.lay-li{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#fff}
+.lay-li.off{opacity:.55} .lay-li.drag{opacity:.35} .lay-li.alvo{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.lay-li .hd{cursor:grab;color:var(--muted);font-size:18px;line-height:1;padding:0 2px}
+.lay-li b{flex:1;font-size:13.5px;min-width:0}
+.lay-li select{width:auto;min-height:34px;padding:4px 8px;font-size:12.5px}
+.lay-li button[data-up],.lay-li button[data-dn]{width:30px;height:30px;border-radius:8px;background:var(--bg);font-weight:800}
+.lay-li button:disabled{opacity:.35}
+.lay-li input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand)}
+@media (max-width:1080px){ .t-p,.t-m,.t-g{grid-column:1/-1} }
+@media (max-width:820px){ .lay-li{flex-wrap:wrap} .lay-li b{flex-basis:60%} }
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -504,7 +517,7 @@ function telaNovaSenha(){
 
 /* ===================== dados ===================== */
 async function carregar(){
-  const [p, c, v, l, pr, mv, fx, ah, at, em] = await Promise.all([
+  const [p, c, v, l, pr, mv, fx, ah, at, em, pf] = await Promise.all([
     sb.from("perfis").select("*").order("nome"),
     sb.from("clientes").select("*").order("empresa"),
     sb.from("vendas").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
@@ -514,8 +527,10 @@ async function carregar(){
     sb.from("custos_fixos").select("*").order("nome"),
     sb.from("avaliacoes_hist").select("*").order("data"),
     sb.from("atividades").select("*").order("quando"),
-    sb.from("empresa").select("*").eq("id", 1).maybeSingle()
+    sb.from("empresa").select("*").eq("id", 1).maybeSingle(),
+    sb.from("preferencias").select("*").maybeSingle()
   ]);
+  PREF = pf.data || PREF;
   hist = (ah.data || []); ativs = (at.data || []); EMP = em.data || null;
   const err = [p,c,v,l,pr,mv,fx,ah,at].find(x => x.error);
   if (err) toast("Erro ao carregar: " + err.error.message);
@@ -649,6 +664,62 @@ function ligarArea(pr){
   };
   svg.onmouseleave = () => tip.style.opacity = 0;
 }
+const BLOCOS = { kpis:"Cards de resumo", avisos:"Atenção agora (lembretes)", grafico:"Gráfico de vendas", recentes:"Vendas recentes", pagamentos:"Formas de pagamento", funil:"Conversão do funil", ticket:"Ticket médio e serviços", estoque:"Estoque", ranking:"Top avaliações da semana" };
+const LAY_PADRAO = [["kpis","full",1],["avisos","full",1],["grafico","g",1],["recentes","p",1],["pagamentos","p",1],["funil","p",1],["ticket","p",1],["estoque","m",0],["ranking","m",0]].map(([id, tam, vis]) => ({ id, tam, vis: !!vis }));
+let PREF = null;
+function layoutPainel(){
+  let salvo = PREF && Array.isArray(PREF.painel) ? PREF.painel : null;
+  if (!salvo) { try { salvo = JSON.parse(localStorage.getItem("painel_" + me.id) || "null"); } catch (e) {} }
+  salvo = (salvo || []).filter(b => BLOCOS[b.id]);
+  return [...salvo, ...LAY_PADRAO.filter(d => !salvo.some(x => x.id === d.id)).map(x => ({ ...x }))];
+}
+async function salvarLayout(L){
+  PREF = { ...(PREF || {}), painel: L };
+  try { localStorage.setItem("painel_" + me.id, JSON.stringify(L)); } catch (e) {}
+  const { error } = await sb.from("preferencias").upsert({ user_id: me.id, painel: L, atualizado_em: new Date().toISOString() });
+  if (error) toast("Salvo só neste aparelho: " + error.message);
+}
+function abrirLayout(){
+  let L = layoutPainel().map(b => ({ ...b }));
+  const TAMS = { p: "Pequeno (1/3)", m: "Médio (1/2)", g: "Grande (2/3)", full: "Largura toda" };
+  modal("Personalizar painel", `
+    <p class="hint" style="margin:12px 0">Arraste pelo ⠿ (ou use ↑ ↓) para mudar a ordem. Escolha o tamanho de cada bloco e desmarque os que não quer ver. Fica salvo só para você.</p>
+    <div id="layLista"></div>
+    <button type="button" class="btn ghost sm" id="layReset" style="margin-top:4px">Restaurar padrão</button>`,
+  async () => { await salvarLayout(L); return "Painel personalizado ✅"; });
+  let de = null;
+  const desenhar = () => {
+    $("#layLista").innerHTML = L.map((b, i) => `<div class="lay-li ${b.vis ? "" : "off"}" draggable="true" data-i="${i}">
+      <span class="hd">⠿</span><input type="checkbox" data-vis="${i}" ${b.vis ? "checked" : ""} title="Mostrar">
+      <b>${BLOCOS[b.id]}</b>
+      <select class="in" data-tam="${i}">${Object.entries(TAMS).map(([k, t]) => `<option value="${k}" ${b.tam === k ? "selected" : ""}>${t}</option>`).join("")}</select>
+      <button type="button" data-up="${i}" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" data-dn="${i}" ${i === L.length - 1 ? "disabled" : ""}>↓</button></div>`).join("");
+    const mover = (a, b) => { if (b < 0 || b >= L.length || a === b) return; const [x] = L.splice(a, 1); L.splice(b, 0, x); desenhar(); };
+    $("#layLista").querySelectorAll("[data-vis]").forEach(c => c.onchange = () => { L[+c.dataset.vis].vis = c.checked; desenhar(); });
+    $("#layLista").querySelectorAll("[data-tam]").forEach(c => c.onchange = () => { L[+c.dataset.tam].tam = c.value; });
+    $("#layLista").querySelectorAll("[data-up]").forEach(c => c.onclick = () => mover(+c.dataset.up, +c.dataset.up - 1));
+    $("#layLista").querySelectorAll("[data-dn]").forEach(c => c.onclick = () => mover(+c.dataset.dn, +c.dataset.dn + 1));
+    $("#layLista").querySelectorAll(".lay-li").forEach(li => {
+      li.ondragstart = e => { de = +li.dataset.i; li.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", li.dataset.i); };
+      li.ondragend = () => li.classList.remove("drag");
+      li.ondragover = e => { e.preventDefault(); li.classList.add("alvo"); };
+      li.ondragleave = () => li.classList.remove("alvo");
+      li.ondrop = e => { e.preventDefault(); li.classList.remove("alvo"); if (de != null) mover(de, +li.dataset.i); de = null; };
+    });
+  };
+  desenhar();
+  $("#layReset").onclick = () => { L = LAY_PADRAO.map(x => ({ ...x })); desenhar(); };
+}
+function blocoEstoquePainel(){
+  const ps = produtos.filter(p => p.ativo);
+  return `<div class="card"><h3>Estoque <button class="btn ghost sm" data-go="estoque">Abrir</button></h3>
+    ${ps.length ? ps.map(p => { const sd = saldo(p.id); return `<div class="pg"><div class="ico" style="background:${sd <= p.minimo ? "var(--bad-soft)" : "var(--ok-soft)"};color:${sd <= p.minimo ? "var(--bad)" : "var(--ok)"}">📦</div><div class="m"><b>${esc(p.nome)}</b><small class="num">${brl(Math.max(0, sd) * custoMedio(p.id))} em estoque · mínimo ${p.minimo}</small></div><div class="pc num" style="font-size:18px;color:${sd <= p.minimo ? "var(--bad)" : "var(--ink)"}">${sd}</div></div>`; }).join("") : `<p class="hint">Nenhum produto cadastrado.</p>`}</div>`;
+}
+function blocoRankingPainel(){
+  const ls = clientes.map(c => { const hs = hist.filter(h => h.cliente_id === c.id); const u = hs[hs.length - 1]; if (!u) return null; const base = hs.filter(h => diasEntre(h.data, u.data) >= 6).pop() || (hs.length > 1 ? hs[0] : null); return { c, u, d: base ? u.total - base.total : null }; }).filter(Boolean).sort((a, b) => ((b.d ?? -1) - (a.d ?? -1)) || (b.u.total - a.u.total)).slice(0, 5);
+  return `<div class="card"><h3>🏆 Top avaliações da semana <button class="btn ghost sm" id="rkAbrir" onclick="F.cModo='ranking';ir('clientes')">Ver ranking</button></h3>
+    ${ls.length ? ls.map((x, i) => `<div class="rv" data-cli="${x.c.id}"><div class="av" style="background:${["#F59E0B","#94A3B8","#B45309","#6366F1","#6366F1"][i]}">${i + 1}º</div><div class="m"><b>${esc(x.c.empresa)}</b><small>⭐ ${x.u.rating != null ? String(x.u.rating).replace(".", ",") : "—"} · ${x.u.total} avaliações</small></div><div class="r"><b>${x.d == null ? "1ª leitura" : (x.d > 0 ? "+" : "") + x.d}</b><small>na semana</small></div></div>`).join("") : `<p class="hint">Vincule clientes ao Google para aparecerem aqui.</p>`}</div>`;
+}
 function painel(){
   const pr = periodo(), n = numerosPeriodo(pr.ini, pr.fim), a = pr.pIni ? numerosPeriodo(pr.pIni, pr.pFim) : null;
   const pend = n.vs.filter(v => v.status === "pendente"), pendA = a ? a.vs.filter(v => v.status === "pendente") : [];
@@ -665,44 +736,53 @@ function painel(){
   const conv = novos.length ? Math.round(etapa(["cliente"]) / novos.length * 1000) / 10 : 0;
   const porVend = equipe.map(p => ({ nome: p.nome || p.email, v: soma(n.vs.filter(v => v.vendedor_id === p.id), v => v.valor), q: n.vs.filter(v => v.vendedor_id === p.id).length })).filter(x => x.q).sort((x, y) => y.v - x.v);
   const PERS = [["ontem","Ontem"],["hoje","Hoje"],["semana","Semana"],["mes","Mês"],["ano","Ano"],["tudo","Tudo"]];
-  $("#view").innerHTML = `
-    <div class="dhead">
-      <div><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2><p>Acompanhe suas vendas e métricas em tempo real.</p></div>
-      <div class="icons"><button class="ibtn" id="dRef" title="Atualizar agora">${SVG.refresh}</button><button class="ibtn ${document.body.classList.contains("privado") ? "on" : ""}" id="dEye" title="Esconder valores">${SVG.eye}</button><button class="ibtn" id="dFin" title="Financeiro">${SVG.money}</button></div>
-    </div>
-    <div class="periodos" style="margin-bottom:16px">${PERS.map(([k, t]) => `<button data-per="${k}" class="${PER === k ? "on" : ""}">${t}</button>`).join("")}<input type="month" id="perMes" value="${mes}" title="Escolher um mês" class="${PER === "custom" ? "on" : ""}" style="${PER === "custom" ? "color:var(--brand);font-weight:700" : ""}"></div>
-    <div class="grid kpis">
+  const BL = {
+    kpis: () => `    <div class="grid kpis">
       <div class="gk g1"><div class="ic">${SVG.cart}</div><small>Total de vendas</small><b class="num">${n.vs.length}</b><em>${a ? deltaTxt(n.vs.length, a.vs.length, pr.ant) : pr.nome}</em></div>
       <div class="gk g2"><div class="ic">${SVG.money}</div><small>Receita total</small><b class="num">${brl(n.fat)}</b><em>${a ? deltaTxt(n.fat, a.fat, pr.ant) : pr.nome}</em></div>
       <div class="gk g3"><div class="ic">${SVG.clock}</div><small>Vendas pendentes</small><b class="num">${pend.length}${pend.length ? " · " + brl(soma(pend, v => v.valor)) : ""}</b><em>${a ? deltaTxt(pend.length, pendA.length, pr.ant) + "<br>" : ""}aguardando pagamento</em></div>
       <div class="gk ${n.resultado >= 0 ? "g4" : "g5"}"><div class="ic">${SVG.trend}</div><small>Resultado (lucro)</small><b class="num">${brl(n.resultado)}</b><em>${a ? deltaTxt(n.resultado, a.resultado, pr.ant) : "entradas − saídas"}</em></div>
     </div>
-    <div style="margin-top:14px">${cardAvisos()}</div>
-    <div class="d2" style="margin-top:0">
-      <div class="card">
+`,
+    avisos: () => cardAvisos(),
+    grafico: () => `      <div class="card">
         <div class="chead"><div class="ico">${SVG.chart}</div><div><b>Vendas</b><small>Receita no período · ${esc(pr.nome)}</small></div></div>
         <div class="bigv num">${brl(n.fat)} ${a ? `<span class="delta ${pct(n.fat, a.fat) < 0 ? "neg" : ""}">${pct(n.fat, a.fat) >= 0 ? "↗ +" : "↘ "}${String(pct(n.fat, a.fat)).replace(".", ",")}%</span>` : ""}</div>
         ${graficoArea(pr)}
       </div>
-      <div class="card"><h3>Vendas recentes <small>${recentes.length} no período</small><button class="btn ghost sm" data-go="clientes">Ver todos</button></h3>
+`,
+    recentes: () => `      <div class="card"><h3>Vendas recentes <small>${recentes.length} no período</small><button class="btn ghost sm" data-go="clientes">Ver todos</button></h3>
         <div class="rolagem" style="max-height:330px">${recentes.length ? recentes.map(v => { const c = cliente(v.cliente_id) || {}; const nm = c.empresa || "Sem cliente"; return `<div class="rv" data-venda="${v.id}"><div class="av" style="background:${corAv(nm)}">${iniciais(nm)}</div><div class="m"><b>${esc(nm)}</b><small>${esc(servTxt(v))}</small><small>${esc(nomeVend(v.vendedor_id))}${v.canal ? " · " + esc(v.canal) : ""}</small></div><div class="r"><b class="num" style="color:${v.status === "pendente" ? "var(--warn)" : v.status === "cancelado" ? "var(--bad)" : "var(--ok)"}">${brl(v.valor)}</b><small>${v.data.slice(8)}/${v.data.slice(5, 7)} · ${ST_VENDA[v.status]}</small></div></div>`; }).join("") : `<p class="hint">Nenhuma venda ${esc(pr.nome)}.</p>`}</div>
       </div>
-    </div>
-    <div class="d3">
-      <div class="card"><h3>Formas de pagamento <small>${n.vs.length} vendas</small></h3>
+`,
+    pagamentos: () => `      <div class="card"><h3>Formas de pagamento <small>${n.vs.length} vendas</small></h3>
         ${formas.length ? formas.map(x => { const ic = icoPg[x.f] || ["•", "#F1F5F9", "#475569"], pc = n.fat ? Math.round(x.v / n.fat * 1000) / 10 : 0; return `<div class="pg"><div class="ico" style="background:${ic[1]};color:${ic[2]}">${ic[0]}</div><div class="m"><b>${x.f}</b><small>${x.q} venda${x.q !== 1 ? "s" : ""} · <span class="num">${brl(x.v)}</span></small></div><div class="bar"><i style="width:${pc}%;background:${ic[2]}"></i></div><div class="pc" style="color:${ic[2]}">${String(pc).replace(".", ",")}%</div></div>`; }).join("") : `<p class="hint">Sem vendas no período.</p>`}
         ${n.vs.length ? `<div class="pg"><div class="ico" style="background:var(--warn-soft);color:var(--warn)">⏳</div><div class="m"><b>Pendentes</b><small>${pend.length} de ${n.vs.length} vendas</small></div><div class="bar"><i style="width:${pend.length / n.vs.length * 100}%;background:var(--warn)"></i></div><div class="pc" style="color:var(--warn)">${Math.round(pend.length / n.vs.length * 100)}%</div></div>` : ""}
       </div>
-      <div class="card"><h3>Conversão do funil <small>clientes que entraram ${esc(pr.nome)}</small></h3>
+`,
+    funil: () => `      <div class="card"><h3>Conversão do funil <small>clientes que entraram ${esc(pr.nome)}</small></h3>
         <div style="display:flex;justify-content:space-between;align-items:flex-end"><div><div class="bigv" style="color:var(--ok);margin:0">${String(conv).replace(".", ",")}%</div><small class="hint">Taxa de conversão (lead → cliente)</small></div><small class="hint" style="text-align:right">${etapa(["cliente"])} CLIENTES<br>${novos.length} NO FUNIL</small></div>
         <div class="fun">${fun.map(x => `<div class="c"><span>${x[1]}</span><i style="height:${Math.max(3, x[1] / fMax * 110)}px;background:${x[2]}"></i></div>`).join("")}</div>
         <div class="funl">${fun.map(x => `<span>${x[0]}</span>`).join("")}</div>
       </div>
-      <div class="card"><h3>Ticket médio</h3>
+`,
+    ticket: () => `      <div class="card"><h3>Ticket médio</h3>
         <div class="tk"><small>Ticket médio</small><b class="num">${brl(ticket)}</b><em>${a ? deltaTxt(ticket, ticketA, pr.ant) : pr.nome}</em></div>
         <div class="mini"><div><small>Placas NFC</small><b class="num">${n.placas}</b></div><div><small>Plaquinhas Instagram</small><b class="num">${n.insta}</b></div><div><small>Google novo</small><b class="num">${n.gNovo}</b></div><div><small>Atualizações Google</small><b class="num">${n.gAtual}</b></div></div>
         ${porVend.length ? `<div class="av-h" style="margin-top:14px">Por vendedor</div>${porVend.map(x => `<div class="hb"><div><b>${esc(x.nome)}</b><span class="num">${x.q} · ${brl(x.v)}</span></div><div class="tr"><i style="width:${x.v / porVend[0].v * 100}%"></i></div></div>`).join("")}` : ""}
       </div>
+`,
+    estoque: () => blocoEstoquePainel(),
+    ranking: () => blocoRankingPainel()
+  };
+
+  $("#view").innerHTML = `
+    <div class="dhead">
+      <div><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2><p>Acompanhe suas vendas e métricas em tempo real.</p></div>
+      <div class="icons"><button class="btn ghost sm" id="dLay" style="height:38px">✏️ Personalizar</button><button class="ibtn" id="dRef" title="Atualizar agora">${SVG.refresh}</button><button class="ibtn ${document.body.classList.contains("privado") ? "on" : ""}" id="dEye" title="Esconder valores">${SVG.eye}</button><button class="ibtn" id="dFin" title="Financeiro">${SVG.money}</button></div>
+    </div>
+    <div class="periodos" style="margin-bottom:16px">${PERS.map(([k, t]) => `<button data-per="${k}" class="${PER === k ? "on" : ""}">${t}</button>`).join("")}<input type="month" id="perMes" value="${mes}" title="Escolher um mês" class="${PER === "custom" ? "on" : ""}" style="${PER === "custom" ? "color:var(--brand);font-weight:700" : ""}"></div>
+    <div class="dgrid">${layoutPainel().filter(b => b.vis).map(b => `<div class="blk t-${b.tam}" data-blk="${b.id}">${BL[b.id]()}</div>`).join("")}</div>
     </div>`;
   ligarLinhas(); ligarAvisos(); ligarArea(pr);
   document.querySelectorAll("[data-per]").forEach(b => b.onclick = () => { PER = b.dataset.per; try { localStorage.setItem("per", PER); } catch (e) {} painel(); });
@@ -710,6 +790,7 @@ function painel(){
   $("#dRef").onclick = () => { recarregarAoVivo(); toast("Atualizado"); };
   $("#dEye").onclick = () => { const on = document.body.classList.toggle("privado"); try { localStorage.setItem("privado", on ? "1" : "0"); } catch (e) {} painel(); };
   $("#dFin").onclick = () => ir("financeiro");
+  $("#dLay").onclick = abrirLayout;
   document.querySelectorAll("[data-go]").forEach(a => { a.style.cursor = "pointer"; a.onclick = () => ir(a.dataset.go); });
 }
 
