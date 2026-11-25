@@ -283,7 +283,7 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .mini small{display:block;font-size:11.5px;color:var(--muted)} .mini b{font-size:17px}
 .privado .num,.privado .gk b,.privado .bigv,.privado .tk b,.privado .rv .r b,.privado .mini b{filter:blur(8px)}
 @media (max-width:1080px){ .d2,.d3{grid-template-columns:1fr} }
-@media (max-width:820px){ .dhead h2{font-size:20px} .gk b{font-size:21px} .gk{min-height:104px;padding:14px} .periodos{width:100%} .periodos button{padding:6px 9px} }
+@media (max-width:820px){ .mini[style*='repeat(4']{grid-template-columns:1fr 1fr!important} .dhead h2{font-size:20px} .gk b{font-size:21px} .gk{min-height:104px;padding:14px} .periodos{width:100%} .periodos button{padding:6px 9px} }
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -1000,6 +1000,7 @@ function telaFin(){
       <div class="card kpi"><small>Despesas + investimentos</small><b class="num">${brl(n.despesas + n.invest)}</b><em>Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}${aPagar ? " · a pagar " + brl(aPagar) : ""}</em></div>
       <div class="card kpi ${n.resultado >= 0 ? "pos" : "neg"}"><small>Resultado</small><b class="num">${brl(n.resultado)}</b><em>${n.fat ? "Margem " + margem + "%" : "&nbsp;"}</em></div>
     </div>
+    ${cardRetorno()}
     <div class="grid two">
       <div>
         <div class="seg" style="margin-bottom:12px"><button data-t="" class="${!F.lTipo?"on":""}">Todos</button>${Object.entries(TIPOS).map(([k,t]) => `<button data-t="${k}" class="${F.lTipo===k?"on":""}">${t}</button>`).join("")}</div>
@@ -1293,6 +1294,30 @@ function iniciarAoVivo(){
   marcarSync();
 }
 
+/* ===================== RETORNO DO INVESTIMENTO (caixa desde o início) ===================== */
+function cardRetorno(){
+  const recebido = soma(vendas.filter(v => !["pendente","cancelado"].includes(v.status)), v => v.valor) + soma(lanc.filter(l => l.tipo === "entrada" && l.pago), l => l.valor);
+  const emEstoque = soma(movs.filter(m => m.tipo === "entrada"), m => m.qtd * m.custo_unit);
+  const anuncios = soma(lanc.filter(l => l.tipo === "investimento" && l.pago), l => l.valor);
+  const outras = soma(lanc.filter(l => (l.tipo === "custo" || l.tipo === "despesa") && l.pago), l => l.valor);
+  const saiu = emEstoque + anuncios + outras, caixa = recebido - saiu;
+  if (!saiu && !recebido) return "";
+  const valEst = soma(produtos.filter(p => p.ativo), p => Math.max(0, saldo(p.id)) * custoMedio(p.id));
+  const prog = saiu ? Math.min(100, recebido / saiu * 100) : 100;
+  const datas = [...vendas.map(v => v.data), ...movs.map(m => m.data), ...lanc.map(l => l.data)].sort();
+  return `<div class="card" style="margin-bottom:14px;border-left:4px solid ${caixa >= 0 ? "var(--ok)" : "var(--brand)"}">
+    <h3>Retorno do investimento <small>desde ${datas[0] ? datas[0].split("-").reverse().join("/") : "o início"} · dinheiro que de fato entrou e saiu</small></h3>
+    <div class="mini" style="grid-template-columns:repeat(4,1fr);margin-top:0">
+      <div><small>Investido em estoque</small><b class="num">${brl(emEstoque)}</b></div>
+      <div><small>Anúncios e outros investimentos</small><b class="num">${brl(anuncios)}</b></div>
+      <div><small>Custos e despesas pagos</small><b class="num">${brl(outras)}</b></div>
+      <div><small>Recebido de clientes</small><b class="num" style="color:var(--ok)">${brl(recebido)}</b></div>
+    </div>
+    <div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;gap:10px;flex-wrap:wrap"><b>${caixa < 0 ? `Faltam <span class="num">${brl(-caixa)}</span> para recuperar o que foi investido` : `Investimento recuperado ✅ · sobra <span class="num">${brl(caixa)}</span> no caixa`}</b><span class="hint">${Math.round(prog)}% já voltou</span></div>
+    <div class="tr" style="height:10px;background:var(--bg);border-radius:9px;overflow:hidden"><i style="display:block;height:100%;width:${prog}%;background:${caixa >= 0 ? "var(--ok)" : "var(--brand)"};border-radius:9px"></i></div></div>
+    <p class="hint" style="margin-top:10px">Ainda há <b class="num">${brl(valEst)}</b> em placas no estoque, já pagas. O <b>Resultado do mês</b> mostra o lucro real: ele conta só o custo das placas que foram vendidas, para a compra do estoque não ser contada duas vezes. Vendas pendentes só entram aqui quando forem pagas.</p>
+  </div>`;
+}
 /* ===================== AVISOS / LEMBRETES ===================== */
 const localDT = d => new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
 const fmtDT = iso => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
