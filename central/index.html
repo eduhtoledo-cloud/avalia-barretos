@@ -12,6 +12,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
 <script src="../config.js?v=6"></script>
 <script src="config.js?v=1"></script>
 <style>
@@ -318,6 +320,25 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .edbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--brand-soft);border:1px solid #C9D6F5;border-radius:14px;padding:10px 12px;margin-bottom:6px;font-size:13px}
 .edbar .hint{flex-basis:100%;margin:0}
 @media (max-width:1080px){ .rz{display:none} }
+.grid-stack{margin:0 -7px}
+.grid-stack.gs-plano{margin:0;height:auto!important}
+.gs-plano > .grid-stack-item{position:relative!important;height:auto!important;width:auto!important;left:auto!important;top:auto!important;margin-bottom:14px}
+.gs-plano .grid-stack-item-content{position:relative!important;inset:auto!important}
+.gs-plano .grid-stack-item-content > .card,.gs-plano .grid-stack-item-content > .avisos{height:auto}
+.grid-stack-item-content{border-radius:16px}
+.grid-stack-item-content > .card,.grid-stack-item-content > .avisos{height:100%;margin:0!important;overflow:auto}
+.grid-stack-item-content.gs-kpis{overflow:visible}
+.gs-kpis .kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));height:100%;align-content:start}
+.gs-edit .grid-stack-item-content{outline:2px dashed #AFC2F4;outline-offset:-1px}
+.gs-edit .grid-stack-item-content > :not(.blk-bar){pointer-events:none;user-select:none}
+.gs-edit .grid-stack-item:hover .grid-stack-item-content{outline-color:var(--brand)}
+.grid-stack .blk-bar{position:absolute;top:8px;right:8px;left:auto;gap:6px;justify-content:flex-end;z-index:20}
+.grid-stack .blk-bar .grip{box-shadow:0 4px 12px rgba(26,92,229,.35)}
+.grid-stack-placeholder > .placeholder-content{background:rgba(26,92,229,.07)!important;border:2px dashed var(--brand)!important;border-radius:16px}
+.gs-edit .ui-resizable-handle{z-index:21!important}
+.gs-edit .ui-resizable-se{width:22px!important;height:22px!important;right:4px!important;bottom:4px!important;background:var(--brand)!important;border-radius:6px 0 12px 0;opacity:.9;transform:none!important}
+.gs-edit .ui-resizable-e,.gs-edit .ui-resizable-w{width:10px!important}
+.gs-edit .ui-resizable-s{height:10px!important}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -686,12 +707,13 @@ function ligarArea(pr){
   svg.onmouseleave = () => tip.style.opacity = 0;
 }
 const BLOCOS = { kpis:"Cards de resumo", avisos:"Atenção agora (lembretes)", grafico:"Gráfico de vendas", recentes:"Vendas recentes", pagamentos:"Formas de pagamento", funil:"Conversão do funil", ticket:"Ticket médio e serviços", estoque:"Estoque", ranking:"Top avaliações da semana" };
-const LAY_PADRAO = [["kpis","full",1],["avisos","full",1],["grafico","g",1],["recentes","p",1],["pagamentos","p",1],["funil","p",1],["ticket","p",1],["estoque","m",0],["ranking","m",0]].map(([id, tam, vis]) => ({ id, tam, vis: !!vis }));
+const LAY_PADRAO = [["kpis",0,0,12,3,1],["avisos",0,3,12,4,1],["grafico",0,7,8,7,1],["recentes",8,7,4,7,1],["pagamentos",0,14,4,6,1],["funil",4,14,4,6,1],["ticket",8,14,4,7,1],["estoque",0,21,6,5,0],["ranking",6,21,6,6,0]].map(([id, x, y, w, h, vis]) => ({ id, x, y, w, h, vis: !!vis }));
+const MIN_BL = { kpis:[6,2], avisos:[4,3], grafico:[4,5], recentes:[3,4], pagamentos:[3,4], funil:[3,5], ticket:[3,5], estoque:[3,3], ranking:[3,4] };
 let PREF = null;
 function layoutPainel(){
   let salvo = PREF && Array.isArray(PREF.painel) ? PREF.painel : null;
   if (!salvo) { try { salvo = JSON.parse(localStorage.getItem("painel_" + me.id) || "null"); } catch (e) {} }
-  salvo = (salvo || []).filter(b => BLOCOS[b.id]);
+  salvo = (salvo || []).filter(b => BLOCOS[b.id] && typeof b.w === "number");
   return [...salvo, ...LAY_PADRAO.filter(d => !salvo.some(x => x.id === d.id)).map(x => ({ ...x }))];
 }
 async function salvarLayout(L){
@@ -731,55 +753,32 @@ function abrirLayout(){
   desenhar();
   $("#layReset").onclick = () => { L = LAY_PADRAO.map(x => ({ ...x })); desenhar(); };
 }
-let EDIT = false;
-function ligarEdicao(){
+let EDIT = false, GS = null, avisoCel = false;
+function iniciarGrade(){
+  if (GS) { try { GS.destroy(false); } catch (e) {} GS = null; }
+  const el = $("#gs"); if (!el) return;
+  if (innerWidth < 820 || !window.GridStack) {
+    // celular (ou biblioteca indisponível): um bloco embaixo do outro, na ordem montada no computador
+    el.classList.add("gs-plano");
+    [...el.children].sort((a, b) => ((+a.getAttribute("gs-y") || 0) - (+b.getAttribute("gs-y") || 0)) || ((+a.getAttribute("gs-x") || 0) - (+b.getAttribute("gs-x") || 0))).forEach(c => el.appendChild(c));
+    if (EDIT) { EDIT = false; toast("Para montar o painel, use o computador. No celular os blocos ficam um embaixo do outro."); setTimeout(painel, 0); }
+    return;
+  }
+  GS = GridStack.init({ column: 12, cellHeight: 56, margin: 7, float: true, animate: true, staticGrid: !EDIT,
+    handle: ".grip", columnOpts: { breakpoints: [{ w: 820, c: 1 }] }, resizable: { handles: "e,se,s,sw,w" } }, el);
   if (!EDIT) return;
-  const grid = $(".dgrid"); let L = layoutPainel();
-  const salvarERender = async () => { await salvarLayout(L); painel(); };
-  grid.querySelectorAll("[data-hide]").forEach(b => b.onclick = () => { L.find(x => x.id === b.dataset.hide).vis = false; salvarERender(); });
-  document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const i = L.findIndex(x => x.id === b.dataset.add); const [it] = L.splice(i, 1); it.vis = true; L.push(it); salvarERender(); });
-  $("#edReset").onclick = () => { L = LAY_PADRAO.map(x => ({ ...x })); salvarERender(); };
+  const L = layoutPainel();
+  const gravar = () => {
+    if (GS.getColumn() !== 12) { if (!avisoCel) { toast("Para montar o painel, use o computador — no celular os blocos ficam um embaixo do outro."); avisoCel = true; } return; }
+    GS.save(false).forEach(p => { const it = L.find(x => x.id === p.id); if (it) Object.assign(it, { x: p.x, y: p.y, w: p.w, h: p.h }); });
+    salvarLayout(L);
+  };
+  GS.on("change", gravar);
+  if (L.some(b => b.vis && b.x == null)) gravar();
+  el.querySelectorAll("[data-hide]").forEach(b => b.onclick = () => { const it = L.find(x => x.id === b.dataset.hide); it.vis = false; GS.removeWidget(b.closest(".grid-stack-item")); gravar(); salvarLayout(L).then(() => painel()); });
+  document.querySelectorAll("[data-add]").forEach(b => b.onclick = async () => { const it = L.find(x => x.id === b.dataset.add); it.vis = true; it.x = null; it.y = null; await salvarLayout(L); painel(); });
+  $("#edReset").onclick = async () => { await salvarLayout(LAY_PADRAO.map(x => ({ ...x }))); painel(); };
   $("#edOk").onclick = () => { EDIT = false; painel(); toast("Painel salvo ✅"); };
-  const limpar = () => grid.querySelectorAll(".blk").forEach(b => b.classList.remove("ins-antes", "ins-depois", "ins-cima", "ins-baixo"));
-  // mover (mouse e toque)
-  grid.querySelectorAll(".grip").forEach(g => g.onpointerdown = e => {
-    e.preventDefault();
-    const blk = g.closest(".blk"), id = blk.dataset.blk;
-    const ghost = document.createElement("div"); ghost.className = "dghost"; ghost.textContent = "⠿ " + BLOCOS[id]; document.body.appendChild(ghost);
-    blk.classList.add("arrastando"); let alvo = null, depois = false;
-    const mv = ev => {
-      ghost.style.left = ev.clientX + 14 + "px"; ghost.style.top = ev.clientY + 10 + "px"; limpar();
-      const el = (document.elementFromPoint(ev.clientX, ev.clientY) || {}).closest?.(".blk");
-      if (el && el !== blk && grid.contains(el)) {
-        const r = el.getBoundingClientRect(), largo = r.width > grid.clientWidth * .85;
-        depois = largo ? ev.clientY > r.top + r.height / 2 : ev.clientX > r.left + r.width / 2;
-        el.classList.add(largo ? (depois ? "ins-baixo" : "ins-cima") : (depois ? "ins-depois" : "ins-antes")); alvo = el;
-      } else alvo = null;
-      if (ev.clientY < 70) scrollBy(0, -14); else if (ev.clientY > innerHeight - 70) scrollBy(0, 14);
-    };
-    const up = () => {
-      removeEventListener("pointermove", mv); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
-      ghost.remove(); blk.classList.remove("arrastando"); limpar();
-      if (alvo) { const de = L.findIndex(x => x.id === id), [it] = L.splice(de, 1); L.splice(L.findIndex(x => x.id === alvo.dataset.blk) + (depois ? 1 : 0), 0, it); salvarERender(); }
-    };
-    addEventListener("pointermove", mv); addEventListener("pointerup", up); addEventListener("pointercancel", up); mv(e);
-  });
-  // redimensionar: encaixa em 1/3, 1/2, 2/3 ou inteiro
-  const TAM_DE = { 2: "p", 3: "m", 4: "g", 6: "full" }, NOME = { p: "1/3", m: "1/2", g: "2/3", full: "Inteiro" };
-  grid.querySelectorAll(".rz").forEach(h => h.onpointerdown = e => {
-    e.preventDefault();
-    const blk = h.closest(".blk"), it = L.find(x => x.id === blk.dataset.blk);
-    const gap = 14, col = (grid.clientWidth - gap * 5) / 6, x0 = e.clientX, w0 = blk.getBoundingClientRect().width;
-    const tag = document.createElement("div"); tag.className = "rz-tag"; blk.appendChild(tag);
-    let tam = it.tam;
-    const mv = ev => {
-      const span = (w0 + (ev.clientX - x0) + gap) / (col + gap);
-      const op = [2, 3, 4, 6].reduce((a, b) => Math.abs(b - span) < Math.abs(a - span) ? b : a);
-      tam = TAM_DE[op]; blk.classList.remove("t-p", "t-m", "t-g", "t-full"); blk.classList.add("t-" + tam); tag.textContent = NOME[tam];
-    };
-    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); tag.remove(); if (tam !== it.tam) { it.tam = tam; salvarERender(); } };
-    addEventListener("pointermove", mv); addEventListener("pointerup", up); addEventListener("pointercancel", up); mv(e);
-  });
 }
 function blocoEstoquePainel(){
   const ps = produtos.filter(p => p.ativo);
@@ -853,8 +852,8 @@ function painel(){
       <div class="icons"><button class="btn ${EDIT ? "" : "ghost"} sm" id="dLay" style="height:38px">${EDIT ? "✅ Concluir" : "✏️ Personalizar"}</button><button class="ibtn" id="dRef" title="Atualizar agora">${SVG.refresh}</button><button class="ibtn ${document.body.classList.contains("privado") ? "on" : ""}" id="dEye" title="Esconder valores">${SVG.eye}</button><button class="ibtn" id="dFin" title="Financeiro">${SVG.money}</button></div>
     </div>
     <div class="periodos" style="margin-bottom:16px">${PERS.map(([k, t]) => `<button data-per="${k}" class="${PER === k ? "on" : ""}">${t}</button>`).join("")}<input type="month" id="perMes" value="${mes}" title="Escolher um mês" class="${PER === "custom" ? "on" : ""}" style="${PER === "custom" ? "color:var(--brand);font-weight:700" : ""}"></div>
-    ${EDIT ? `<div class="edbar"><b>✏️ Editando o painel</b>${layoutPainel().filter(b => !b.vis).map(b => `<button class="btn ghost sm" data-add="${b.id}">+ ${BLOCOS[b.id]}</button>`).join("")}<span style="margin-left:auto"></span><button class="btn ghost sm" id="edReset">Restaurar padrão</button><button class="btn sm" id="edOk">Concluir</button><p class="hint">Arraste pelo selo azul para mover · puxe a alça azul da direita para mudar o tamanho (1/3, 1/2, 2/3 ou inteiro) · ✕ esconde o bloco</p></div>` : ""}
-    <div class="dgrid ${EDIT ? "edit" : ""}">${layoutPainel().filter(b => b.vis).map(b => `<div class="blk t-${b.tam}" data-blk="${b.id}">${EDIT ? `<div class="blk-bar"><span class="grip">⠿ ${BLOCOS[b.id]}</span><button data-hide="${b.id}" title="Esconder bloco">✕</button></div><div class="rz" title="Arraste para mudar o tamanho"></div>` : ""}${BL[b.id]()}</div>`).join("")}</div>
+    ${EDIT ? `<div class="edbar"><b>✏️ Editando o painel</b>${layoutPainel().filter(b => !b.vis).map(b => `<button class="btn ghost sm" data-add="${b.id}">+ ${BLOCOS[b.id]}</button>`).join("")}<span style="margin-left:auto"></span><button class="btn ghost sm" id="edReset">Restaurar padrão</button><button class="btn sm" id="edOk">Concluir</button><p class="hint">Arraste qualquer bloco pelo selo “⠿ mover” e solte onde quiser · puxe as bordas ou o canto azul para mudar largura e altura · ✕ esconde · pode deixar espaços vazios</p></div>` : ""}
+    <div class="grid-stack ${EDIT ? "gs-edit" : ""}" id="gs">${layoutPainel().filter(b => b.vis).map(b => `<div class="grid-stack-item" gs-id="${b.id}" ${b.x != null ? `gs-x="${b.x}" gs-y="${b.y}"` : `gs-auto-position="true"`} gs-w="${b.w}" gs-h="${b.h}" gs-min-w="${MIN_BL[b.id][0]}" gs-min-h="${MIN_BL[b.id][1]}"><div class="grid-stack-item-content ${b.id === "kpis" ? "gs-kpis" : ""}">${EDIT ? `<div class="blk-bar"><span class="grip">⠿ mover</span><button data-hide="${b.id}" title="Esconder bloco">✕</button></div>` : ""}${BL[b.id]()}</div></div>`).join("")}</div>
     </div>`;
   ligarLinhas(); ligarAvisos(); ligarArea(pr);
   document.querySelectorAll("[data-per]").forEach(b => b.onclick = () => { PER = b.dataset.per; try { localStorage.setItem("per", PER); } catch (e) {} painel(); });
@@ -863,7 +862,7 @@ function painel(){
   $("#dEye").onclick = () => { const on = document.body.classList.toggle("privado"); try { localStorage.setItem("privado", on ? "1" : "0"); } catch (e) {} painel(); };
   $("#dFin").onclick = () => ir("financeiro");
   $("#dLay").onclick = () => { EDIT = !EDIT; painel(); if (!EDIT) toast("Painel salvo ✅"); };
-  ligarEdicao();
+  iniciarGrade();
   document.querySelectorAll("[data-go]").forEach(a => { a.style.cursor = "pointer"; a.onclick = () => ir(a.dataset.go); });
 }
 
