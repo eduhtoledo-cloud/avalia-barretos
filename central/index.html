@@ -275,9 +275,9 @@ const ICON = {
 const K = window.CONFIG || { kits: [] };
 const S = window.CENTRAL || {};
 let sb = null, user = null, me = null;
-let equipe = [], clientes = [], vendas = [], lanc = [], produtos = [], movs = [], fixos = [];
+let equipe = [], clientes = [], vendas = [], lanc = [], produtos = [], movs = [], fixos = [], hist = [];
 let view = "painel", mes = mesAtual();
-const F = { vBusca:"", vStatus:"", vVend:"", vServ:"", cBusca:"", cStatus:"", lTipo:"" };
+const F = { vBusca:"", vStatus:"", vVend:"", vServ:"", cBusca:"", cStatus:"", cModo:"carteira", rPer:"semana", lTipo:"" };
 
 const ST_VENDA = { pendente:"Pendente", pago:"Pago", enviado:"Enviado", entregue:"Entregue", cancelado:"Cancelado" };
 const ST_CLI   = { lead:"Lead", negociando:"Negociando", cliente:"Cliente", perdido:"Perdido" };
@@ -288,13 +288,13 @@ const CATS = {
   investimento: ["Anúncios Meta","Anúncios Google","Estoque","Equipamentos","Material de divulgação"],
   entrada: ["Aporte","Venda avulsa","Outros"]
 };
-const SERVICOS = { placa:"Placa NFC", google_novo:"Google novo", google_atualizacao:"Atualização do Google" };
+const SERVICOS = { placa:"Placa NFC", instagram:"Plaquinha Instagram", google_novo:"Google novo", google_atualizacao:"Atualização do Google" };
 const servDe = v => (v.servicos && v.servicos.length ? v.servicos : ["placa"]);
-const servTxt = v => servDe(v).map(k => k === "placa" ? `${v.qtd} placa${v.qtd != 1 ? "s" : ""}${v.cor ? " " + v.cor : ""}` : (SERVICOS[k] || k)).join(" + ");
+const servTxt = v => servDe(v).map(k => k === "placa" ? `${v.qtd} placa${v.qtd != 1 ? "s" : ""}${v.cor ? " " + v.cor : ""}` : k === "instagram" ? `${v.qtd_insta || 0} plaquinha${v.qtd_insta != 1 ? "s" : ""} Instagram` : (SERVICOS[k] || k)).join(" + ");
 const saldo = pid => soma(movs.filter(m => m.produto_id === pid), m => m.qtd);
 function custoMedio(pid){ const es = movs.filter(m => m.produto_id === pid && m.tipo === "entrada" && m.qtd > 0); const q = soma(es, m => m.qtd); return q ? soma(es, m => m.qtd * m.custo_unit) / q : 0; }
 const prodCor = cor => produtos.find(p => p.ativo && p.cor === cor);
-const CORES = { azul:"#1A5CE5", preta:"#0F172A" };
+const CORES = { azul:"#1A5CE5", preta:"#0F172A", instagram:"#D62976" };
 const CANAIS = ["Site","WhatsApp","Instagram","Presencial","Indicação"];
 const PAGTOS = ["Pix","Cartão","Boleto","Dinheiro"];
 const nomeVend = id => (equipe.find(p => p.id === id) || {}).nome || "—";
@@ -334,6 +334,7 @@ async function entrar(u){
   montarNav();
   await carregar();
   ir(location.hash.replace("#","") || "painel");
+  autoRanking();
 }
 async function sair(){ await sb.auth.signOut(); location.hash = ""; telaLogin(); }
 $("#btnSair").onclick = sair; $("#btnSairM").onclick = sair;
@@ -398,16 +399,18 @@ function telaNovaSenha(){
 
 /* ===================== dados ===================== */
 async function carregar(){
-  const [p, c, v, l, pr, mv, fx] = await Promise.all([
+  const [p, c, v, l, pr, mv, fx, ah] = await Promise.all([
     sb.from("perfis").select("*").order("nome"),
     sb.from("clientes").select("*").order("empresa"),
     sb.from("vendas").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
     sb.from("lancamentos").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
     sb.from("produtos").select("*").order("id"),
     sb.from("movimentos").select("*").order("data", { ascending:false }).order("id", { ascending:false }),
-    sb.from("custos_fixos").select("*").order("nome")
+    sb.from("custos_fixos").select("*").order("nome"),
+    sb.from("avaliacoes_hist").select("*").order("data")
   ]);
-  const err = [p,c,v,l,pr,mv,fx].find(x => x.error);
+  hist = (ah.data || []);
+  const err = [p,c,v,l,pr,mv,fx,ah].find(x => x.error);
   if (err) toast("Erro ao carregar: " + err.error.message);
   equipe = p.data || []; clientes = c.data || []; vendas = v.data || []; lanc = l.data || [];
   produtos = pr.data || []; movs = mv.data || []; fixos = fx.data || [];
@@ -462,6 +465,7 @@ function numerosDoMes(ym){
   return { vs, ls, fat, entradas, custoVendas, custos, despesas, invest, saidas,
            resultado: fat + entradas - saidas, placas: soma(vs, v => v.qtd),
            receber: soma(vs.filter(v => v.status === "pendente"), v => v.valor),
+           insta: soma(vs, v => v.qtd_insta || 0),
            gNovo: vs.filter(v => servDe(v).includes("google_novo")).length,
            gAtual: vs.filter(v => servDe(v).includes("google_atualizacao")).length,
            compras: soma(movs.filter(m => m.tipo === "entrada" && m.data.startsWith(ym)), m => m.qtd * m.custo_unit) };
@@ -481,7 +485,7 @@ function painel(){
     <div class="top"><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2>${seletorMes()}</div>
     <div class="grid kpis">
       <div class="card kpi"><small>Faturamento</small><b class="num">${brl(n.fat)}</b><em>${varia(n.fat, ant.fat) || "Ticket médio " + brl(n.vs.length ? n.fat / n.vs.length : 0)}</em></div>
-      <div class="card kpi"><small>Vendas</small><b class="num">${n.vs.length}</b><em>${n.placas} placas · ${n.gNovo} Google novo · ${n.gAtual} atualiz.</em></div>
+      <div class="card kpi"><small>Vendas</small><b class="num">${n.vs.length}</b><em>${n.placas} placas${n.insta ? " · " + n.insta + " Instagram" : ""} · ${n.gNovo} Google novo · ${n.gAtual} atualiz.</em></div>
       <div class="card kpi"><small>Saídas</small><b class="num">${brl(n.saidas)}</b><em>Custos ${brl(n.custos)} · Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}</em></div>
       <div class="card kpi ${n.resultado >= 0 ? "pos" : "neg"}"><small>Resultado do mês</small><b class="num">${brl(n.resultado)}</b><em>${n.receber ? "A receber " + brl(n.receber) : "Entradas − saídas"}</em></div>
     </div>
@@ -570,8 +574,9 @@ function abrirVenda(id, clienteId){
         <label class="f"><span>Quantas azuis</span><input class="in num" name="qAzul" type="number" min="0" value="${qA0}"></label>
         <label class="f"><span>Quantas pretas</span><input class="in num" name="qPreta" type="number" min="0" value="${qP0}"></label>
       </div>
-      <p class="hint" id="estHint"></p>
     </div>
+    <div id="blocoInsta" class="hide"><label class="f"><span>Quantas plaquinhas Instagram</span><input class="in num" name="qInsta" type="number" min="1" value="${v.qtd_insta || 1}"></label></div>
+    <p class="hint" id="estHint"></p>
     <div class="row">
       <label class="f"><span>Valor (R$)</span><input class="in num" name="valor" inputmode="decimal" value="${String(v.valor).replace(".",",")}" required></label>
       <label class="f"><span>Custo (R$)</span><input class="in num" name="custo" inputmode="decimal" value="${String(v.custo||0).replace(".",",")}"></label>
@@ -593,11 +598,12 @@ function abrirVenda(id, clienteId){
     const status = segVal("status");
     if (!cli && G && G.maps) cli = clientes.find(x => x.google_link === G.maps);
     if (!cli) cli = await salvar("clientes", { empresa: nomeEmp, telefone: f.telefone.value.trim() || null, cidade: f.cidade.value.trim() || null,
-      google_link: G ? G.maps || null : null, segmento: G ? G.type || null : null, obs: G && G.address ? "Endereço: " + G.address : null,
+      google_link: G ? G.maps || null : null, place_id: G ? G.id || null : null, segmento: G ? G.type || null : null, obs: G && G.address ? "Endereço: " + G.address : null,
       status: status === "cancelado" ? "negociando" : "cliente" });
     else if (status !== "cancelado" && ["lead","negociando","perdido"].includes(cli.status)) await salvar("clientes", { status: "cliente" }, cli.id);
+    if (G && G.id && !hist.some(h => h.cliente_id === cli.id)) await registrarAval(cli.id, G.rating, G.count);
     const pl = placas();
-    const venda = await salvar("vendas", { cliente_id: cli.id, servicos: servSel(), qtd: pl.total, valor: num(f.valor.value), custo: num(f.custo.value), cor: pl.total ? pl.cor : null, status, data: f.data.value, vendedor_id: f.vendedor_id.value, canal: f.canal.value, pagamento: f.pagamento.value, obs: f.obs.value.trim() || null }, id);
+    const venda = await salvar("vendas", { cliente_id: cli.id, servicos: servSel(), qtd: pl.total, qtd_insta: pl.insta, valor: num(f.valor.value), custo: num(f.custo.value), cor: pl.total ? pl.cor : null, status, data: f.data.value, vendedor_id: f.vendedor_id.value, canal: f.canal.value, pagamento: f.pagamento.value, obs: f.obs.value.trim() || null }, id);
     await baixaEstoque(venda, status === "cancelado" ? {} : pl.porCor);
     return id ? "Venda atualizada" : "Venda registrada 🎉";
   }, id && me.papel === "admin" ? () => excluir("vendas", id) : null);
@@ -618,19 +624,25 @@ function abrirVenda(id, clienteId){
   if (c) $("#vincBox").innerHTML = cartaoCliente(c);
   function servSel(){ return [...f.querySelectorAll("#servs button.on")].map(b => b.dataset.sv); }
   function placas(){
-    if (!servSel().includes("placa")) return { total: 0, cor: null, porCor: {} };
-    const cor = segVal("cor") || "azul";
-    if (cor === "mista") { const a = Math.max(0, +f.qAzul.value || 0), p = Math.max(0, +f.qPreta.value || 0); return { total: a + p, cor, porCor: { azul: a, preta: p } }; }
-    const q = Math.max(1, +f.qtd.value || 1); return { total: q, cor, porCor: { [cor]: q } };
+    const sv = servSel(), porCor = {}; let total = 0, cor = null;
+    if (sv.includes("placa")) {
+      cor = segVal("cor") || "azul";
+      if (cor === "mista") { const a = Math.max(0, +f.qAzul.value || 0), p = Math.max(0, +f.qPreta.value || 0); porCor.azul = a; porCor.preta = p; total = a + p; }
+      else { total = Math.max(1, +f.qtd.value || 1); porCor[cor] = total; }
+    }
+    const insta = sv.includes("instagram") ? Math.max(1, +f.qInsta.value || 1) : 0;
+    if (insta) porCor.instagram = insta;
+    return { total, cor, porCor, insta };
   }
   function recalcular(){
     const temPlaca = servSel().includes("placa"), cor = segVal("cor");
     $("#blocoPlaca").classList.toggle("hide", !temPlaca);
+    $("#blocoInsta").classList.toggle("hide", !servSel().includes("instagram"));
     $("#mistaBox").classList.toggle("hide", cor !== "mista");
     f.qtd.readOnly = cor === "mista";
     const pl = placas();
     if (cor === "mista") f.qtd.value = pl.total;
-    const est = ["azul","preta"].map(c => { const pr = prodCor(c); if (!pr) return null; const n = saldo(pr.id) + baixaDe(c); return `${n} ${n === 1 ? c : (c === "azul" ? "azuis" : "pretas")}`; }).filter(Boolean);
+    const est = ["azul","preta","instagram"].map(c => { const pr = prodCor(c); if (!pr) return null; const n = saldo(pr.id) + baixaDe(c); return c === "instagram" ? `${n} Instagram` : `${n} ${n === 1 ? c : (c === "azul" ? "azuis" : "pretas")}`; }).filter(Boolean);
     $("#estHint").textContent = est.length ? "Em estoque: " + est.join(" · ") + ". A baixa é automática ao salvar." : "";
     if (!custoManual) {
       const c = Object.entries(pl.porCor).reduce((a, [cr, q]) => { const pr = prodCor(cr); return a + (pr ? q * custoMedio(pr.id) : 0); }, 0);
@@ -642,6 +654,7 @@ function abrirVenda(id, clienteId){
   f.qtd.addEventListener("input", () => { custoManual = false; recalcular(); });
   f.qAzul.addEventListener("input", () => { custoManual = false; recalcular(); });
   f.qPreta.addEventListener("input", () => { custoManual = false; recalcular(); });
+  f.qInsta.addEventListener("input", () => { custoManual = false; recalcular(); });
   $("#dlg")._onSeg = () => { custoManual = false; recalcular(); };
   f.querySelectorAll(".kits button").forEach(b => b.onclick = () => {
     f.querySelectorAll(".kits button").forEach(x => x.classList.toggle("on", x === b));
@@ -665,12 +678,13 @@ async function baixaEstoque(venda, porCor){
 
 /* ===================== CLIENTES ===================== */
 function telaClientes(){
+  if (F.cModo === "ranking") return telaRanking();
   const q = F.cBusca.toLowerCase();
   const total = id => soma(vendasValidas(vendas.filter(v => v.cliente_id === id)), v => v.valor);
   const lista = clientes.filter(c => (!F.cStatus || c.status === F.cStatus)
     && (!q || [c.empresa,c.contato,c.cidade,c.telefone,c.segmento].some(x => (x||"").toLowerCase().includes(q))));
   $("#view").innerHTML = `
-    <div class="top"><h2>Clientes</h2><button class="btn ghost sm" id="csv">Exportar</button></div>
+    <div class="top"><h2>Clientes</h2>${abasClientes()}<button class="btn ghost sm" id="csv">Exportar</button></div>
     <div class="tools"><input class="in" id="cBusca" placeholder="Buscar empresa, contato, cidade…" value="${esc(F.cBusca)}"></div>
     <div class="seg" style="margin-bottom:12px"><button data-f="" class="${!F.cStatus?"on":""}">Todos · ${clientes.length}</button>${Object.entries(ST_CLI).map(([k,t]) => `<button data-f="${k}" class="${F.cStatus===k?"on":""}">${t} · ${clientes.filter(c=>c.status===k).length}</button>`).join("")}</div>
     <div class="list">${lista.length ? lista.map(c => `<div class="li lc" data-cli="${c.id}">
@@ -679,11 +693,12 @@ function telaClientes(){
         <div class="v num">${brl(total(c.id))}</div></div>`).join("") : `<div class="empty"><b>Nenhum cliente${F.cStatus || q ? " com esse filtro" : " ainda"}</b>Cadastre leads e clientes no botão “Novo cliente”.</div>`}</div>`;
   $("#cBusca").oninput = e => { F.cBusca = e.target.value; const p = e.target.selectionStart; telaClientes(); const i = $("#cBusca"); i.focus(); i.setSelectionRange(p,p); };
   document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { F.cStatus = b.dataset.f; telaClientes(); });
-  ligarLinhas();
+  ligarLinhas(); ligarAbasClientes();
   $("#csv").onclick = () => csv("clientes.csv", ["Empresa","Contato","Telefone","E-mail","Cidade","Segmento","Status","Total comprado","Vendedor","Link Google","Observação"],
     lista.map(c => [c.empresa, c.contato, c.telefone, c.email, c.cidade, c.segmento, ST_CLI[c.status], total(c.id), nomeVend(c.vendedor_id), c.google_link, c.obs]));
 }
 function abrirCliente(id){
+  let P0 = null;   // empresa escolhida no Google nesta edição
   const c = clientes.find(x => x.id === id) || { status: "lead", vendedor_id: me.id };
   const hist = vendas.filter(v => v.cliente_id === id);
   const tz = zap(c.telefone);
@@ -700,6 +715,7 @@ function abrirCliente(id){
     </div>
     <datalist id="dlSeg">${[...new Set(clientes.map(x => x.segmento).filter(Boolean))].map(s => `<option value="${esc(s)}">`).join("")}</datalist>
     <label class="f"><span>E-mail</span><input class="in" name="email" type="email" value="${esc(c.email||"")}"></label>
+    <input type="hidden" name="place_id" value="${esc(c.place_id||"")}">
     <label class="f"><span>Link do Google (perfil da empresa)</span><input class="in" name="google_link" type="url" value="${esc(c.google_link||"")}" placeholder="https://maps.google.com/…"></label>
     <label class="f"><span>Status</span></label>
     <div class="seg" data-seg="status">${Object.entries(ST_CLI).map(([k,t]) => `<button type="button" data-val="${k}" class="${c.status===k?"on":""}">${t}</button>`).join("")}</div>
@@ -707,9 +723,10 @@ function abrirCliente(id){
     <label class="f"><span>Observação</span><textarea class="in" name="obs" placeholder="Próximo passo, melhor horário…">${esc(c.obs||"")}</textarea></label>
     ${hist.length ? `<div class="hist"><div><span>Compras</span><span class="num">${brl(soma(vendasValidas(hist), v=>v.valor))}</span></div>${hist.map(v => `<div><span>${v.data.split("-").reverse().join("/")} · ${esc(servTxt(v))} · ${ST_VENDA[v.status]}</span><span class="num">${brl(v.valor)}</span></div>`).join("")}</div>` : ""}`,
   async f => {
-    const dados = {}; ["empresa","contato","telefone","cidade","segmento","email","google_link","obs","vendedor_id"].forEach(k => dados[k] = f[k].value.trim() || null);
+    const dados = {}; ["empresa","contato","telefone","cidade","segmento","email","google_link","place_id","obs","vendedor_id"].forEach(k => dados[k] = f[k].value.trim() || null);
     dados.status = segVal("status");
-    await salvar("clientes", dados, id);
+    const salvo = await salvar("clientes", dados, id);
+    if (P0 && P0.id === dados.place_id) await registrarAval(salvo.id, P0.rating, P0.count);
     return id ? "Cliente atualizado" : "Cliente cadastrado";
   }, id && me.papel === "admin" ? () => excluir("clientes", id) : null);
   const fc = $("#dlg form");
@@ -722,6 +739,7 @@ function abrirCliente(id){
       if (P.cidade) fc.cidade.value = P.cidade;
       if (P.type) fc.segmento.value = P.type;
       if (P.maps) fc.google_link.value = P.maps;
+      fc.place_id.value = P.id || ""; P0 = P;
       if (P.address && !fc.obs.value.includes(P.address)) fc.obs.value = ("Endereço: " + P.address + "\n" + fc.obs.value).trim();
       $("#vincBox").innerHTML = cartaoGoogle(P);
     }
@@ -898,15 +916,112 @@ function abrirProduto(id){
     <label class="f"><span>Nome</span><input class="in" name="nome" required value="${esc(p.nome||"")}" placeholder="Ex.: Placa NFC Google azul"></label>
     <div class="row">
       <label class="f"><span>Estoque mínimo</span><input class="in num" name="minimo" type="number" min="0" value="${p.minimo}"></label>
-      <label class="f"><span>Baixa automática nas vendas</span><select class="in" name="cor"><option value="">Não</option><option value="azul" ${p.cor==="azul"?"selected":""}>Placas azuis</option><option value="preta" ${p.cor==="preta"?"selected":""}>Placas pretas</option></select></label>
+      <label class="f"><span>Baixa automática nas vendas</span><select class="in" name="cor"><option value="">Não</option><option value="azul" ${p.cor==="azul"?"selected":""}>Placas azuis</option><option value="preta" ${p.cor==="preta"?"selected":""}>Placas pretas</option><option value="instagram" ${p.cor==="instagram"?"selected":""}>Plaquinhas Instagram</option></select></label>
     </div>
     <label class="check"><input type="checkbox" name="ativo" ${p.ativo?"checked":""}> Ativo</label>`,
   async f => {
     const cor = f.cor.value || null;
-    if (cor && produtos.some(x => x.id !== id && x.ativo && x.cor === cor)) { toast("Já existe um produto ativo com baixa das placas " + cor + "s"); throw new Error("cor"); }
+    if (cor && produtos.some(x => x.id !== id && x.ativo && x.cor === cor)) { toast("Já existe outro produto ativo com essa baixa automática"); throw new Error("cor"); }
     await salvar("produtos", { nome: f.nome.value.trim(), minimo: +f.minimo.value || 0, cor, ativo: f.ativo.checked }, id);
     return id ? "Produto atualizado" : "Produto cadastrado";
   }, id && me.papel === "admin" ? () => excluir("produtos", id) : null);
+}
+
+/* ===================== RANKING GOOGLE ===================== */
+const diasEntre = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+const fmtData = d => d ? d.split("-").reverse().slice(0, 2).join("/") : "—";
+function abasClientes(){
+  return `<div class="seg"><button data-cm="carteira" class="${F.cModo==="carteira"?"on":""}">Carteira</button><button data-cm="ranking" class="${F.cModo==="ranking"?"on":""}">🏆 Ranking Google</button></div>`;
+}
+function ligarAbasClientes(){ document.querySelectorAll("[data-cm]").forEach(b => b.onclick = () => { F.cModo = b.dataset.cm; telaClientes(); }); }
+async function registrarAval(clienteId, rating, total){
+  const { error } = await sb.from("avaliacoes_hist").upsert({ cliente_id: clienteId, data: hoje(), rating: rating || null, total: total || 0 }, { onConflict: "cliente_id,data" });
+  if (error) console.warn(error);
+}
+async function placeDoCliente(c){
+  if (c.place_id) return c.place_id;
+  if (!c.google_link) return null;
+  try {
+    const r = await fetch("https://places.googleapis.com/v1/places:searchText", { method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": K.googleApiKey, "X-Goog-FieldMask": "places.id,places.googleMapsUri" },
+      body: JSON.stringify({ textQuery: [c.empresa, c.cidade].filter(Boolean).join(" "), languageCode: "pt-BR", regionCode: "br", pageSize: 5 }) });
+    const d = await r.json(); const ps = d.places || [];
+    const cid = (c.google_link.match(/cid=(\d+)/) || [])[1];
+    const achou = (cid && ps.find(p => (p.googleMapsUri || "").includes(cid))) || ps[0];
+    if (!achou) return null;
+    await sb.from("clientes").update({ place_id: achou.id }).eq("id", c.id);
+    c.place_id = achou.id; return achou.id;
+  } catch (e) { return null; }
+}
+let rodandoRanking = false;
+async function atualizarRanking(lista, silencioso){
+  if (rodandoRanking || !lista.length || !K.googleApiKey) return 0;
+  rodandoRanking = true; let ok = 0, i = 0;
+  const btn = $("#rkAtualizar"); if (btn) { btn.disabled = true; }
+  const fila = lista.slice();
+  async function trabalhador(){
+    while (fila.length) {
+      const c = fila.shift(); i++;
+      if (btn) btn.textContent = `Atualizando ${i}/${lista.length}…`;
+      const pid = await placeDoCliente(c); if (!pid) continue;
+      try {
+        const r = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(pid)}`, { headers: { "X-Goog-Api-Key": K.googleApiKey, "X-Goog-FieldMask": "rating,userRatingCount" } });
+        if (!r.ok) continue; const d = await r.json();
+        await registrarAval(c.id, d.rating, d.userRatingCount); ok++;
+      } catch (e) {}
+    }
+  }
+  await Promise.all([trabalhador(), trabalhador(), trabalhador()]);
+  rodandoRanking = false;
+  const { data } = await sb.from("avaliacoes_hist").select("*").order("data"); hist = data || hist;
+  if (!silencioso) toast(`Ranking atualizado: ${ok} empresa${ok !== 1 ? "s" : ""}`);
+  if (view === "clientes" && F.cModo === "ranking") telaRanking();
+  return ok;
+}
+function autoRanking(){
+  // atualização semanal: quem tem a última leitura com 7+ dias (ou nenhuma) é atualizado ao abrir a central
+  const vencidos = clientes.filter(c => (c.place_id || c.google_link)).filter(c => {
+    const hs = hist.filter(h => h.cliente_id === c.id); const ult = hs.length ? hs[hs.length - 1].data : null;
+    return !ult || diasEntre(ult, hoje()) >= 7;
+  });
+  if (vencidos.length) atualizarRanking(vencidos, true);
+}
+function telaRanking(){
+  const per = { semana: 7, mes: 30, total: 0 }[F.rPer];
+  const vinc = clientes.filter(c => c.place_id || c.google_link);
+  const semVinc = clientes.length - vinc.length;
+  const linhas = vinc.map(c => {
+    const hs = hist.filter(h => h.cliente_id === c.id);
+    const ult = hs[hs.length - 1];
+    if (!ult) return { c, ult: null, delta: null };
+    let base = null;
+    if (per) { const alvo = hs.filter(h => diasEntre(h.data, ult.data) >= per - 1); base = alvo.length ? alvo[alvo.length - 1] : (hs.length > 1 ? hs[0] : null); }
+    return { c, ult, base, delta: base ? ult.total - base.total : null, dRating: base && base.rating != null && ult.rating != null ? Math.round((ult.rating - base.rating) * 10) / 10 : null };
+  });
+  linhas.sort((a, b) => per
+    ? ((b.delta ?? -1) - (a.delta ?? -1)) || ((b.ult?.total ?? -1) - (a.ult?.total ?? -1))
+    : ((b.ult?.total ?? -1) - (a.ult?.total ?? -1)));
+  const ultimaGeral = hist.length ? hist.reduce((a, h) => h.data > a ? h.data : a, "") : null;
+  const somaNovas = soma(linhas, l => l.delta || 0);
+  const medalha = i => ["🥇","🥈","🥉"][i] || `<b style="color:var(--muted)">${i + 1}º</b>`;
+  $("#view").innerHTML = `
+    <div class="top"><h2>Clientes</h2>${abasClientes()}<button class="btn sm" id="rkAtualizar">${rodandoRanking ? "Atualizando…" : "Atualizar agora"}</button></div>
+    <div class="grid kpis">
+      <div class="card kpi"><small>Clientes no ranking</small><b class="num">${vinc.length}</b><em>${semVinc ? semVinc + " sem vínculo com o Google" : "Todos vinculados ao Google"}</em></div>
+      <div class="card kpi pos"><small>Avaliações novas ${F.rPer === "semana" ? "na semana" : F.rPer === "mes" ? "no mês" : ""}</small><b class="num">${per ? "+" + somaNovas : "—"}</b><em>Soma de todos os clientes</em></div>
+      <div class="card kpi"><small>Total de avaliações</small><b class="num">${soma(linhas, l => l.ult?.total || 0)}</b><em>Nota média ${(() => { const r = linhas.filter(l => l.ult?.rating); return r.length ? (soma(r, l => l.ult.rating) / r.length).toFixed(1).replace(".", ",") : "—"; })()}</em></div>
+      <div class="card kpi"><small>Última atualização</small><b class="num">${fmtData(ultimaGeral)}</b><em>Atualiza sozinho toda semana ao abrir a central</em></div>
+    </div>
+    <div class="seg" style="margin:14px 0 12px"><button data-rp="semana" class="${F.rPer==="semana"?"on":""}">Mais avaliados da semana</button><button data-rp="mes" class="${F.rPer==="mes"?"on":""}">Do mês</button><button data-rp="total" class="${F.rPer==="total"?"on":""}">Total de avaliações</button></div>
+    <div class="list">${linhas.length ? linhas.map((l, i) => `<div class="li" style="grid-template-columns:34px 1fr auto auto" data-cli="${l.c.id}">
+        <div style="text-align:center;font-size:18px">${medalha(i)}</div>
+        <div style="min-width:0"><div class="t">${esc(l.c.empresa)}</div><div class="s">${l.ult ? `⭐ ${l.ult.rating != null ? String(l.ult.rating).replace(".", ",") : "—"} · ${l.ult.total} avaliações · lido em ${fmtData(l.ult.data)}` : "Ainda não lido — toque em Atualizar agora"}${l.c.cidade ? " · " + esc(l.c.cidade) : ""}</div></div>
+        <span class="pill ${l.delta > 0 ? "p-pago" : "p-custo"}">${per ? (l.delta == null ? "1ª leitura" : (l.delta > 0 ? "+" : "") + l.delta + (F.rPer === "semana" ? " na semana" : " no mês")) : "total"}</span>
+        <div class="v num">${l.ult ? l.ult.total : "—"}</div></div>`).join("") : `<div class="empty"><b>Nenhum cliente vinculado ao Google</b>Ao cadastrar o cliente, busque a empresa no campo Empresa e escolha o resultado do Google. Ele entra no ranking sozinho.</div>`}</div>
+    <p class="hint" style="margin-top:10px">A contagem é a de avaliações públicas no Google. A primeira leitura vira a base; a partir da semana seguinte aparece quanto cada cliente ganhou.${semVinc ? ` Para colocar no ranking os ${semVinc} sem vínculo, abra o cliente, digite o nome no campo Empresa e escolha a opção do Google.` : ""}</p>`;
+  ligarAbasClientes(); ligarLinhas();
+  document.querySelectorAll("[data-rp]").forEach(b => b.onclick = () => { F.rPer = b.dataset.rp; telaRanking(); });
+  $("#rkAtualizar").onclick = () => atualizarRanking(vinc);
 }
 
 /* ===================== EQUIPE ===================== */

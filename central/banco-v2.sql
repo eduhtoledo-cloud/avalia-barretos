@@ -76,3 +76,18 @@ create policy movimentos_excluir on public.movimentos for delete
 insert into public.produtos (nome, cor, minimo)
 select * from (values ('Placa NFC Google azul','azul',10), ('Placa NFC Google preta','preta',10)) v(nome,cor,minimo)
 where not exists (select 1 from public.produtos);
+
+-- ---------- v3: plaquinha Instagram na venda + ranking de avaliações ----------
+alter table public.vendas add column if not exists qtd_insta int not null default 0;
+alter table public.clientes add column if not exists place_id text;
+create table if not exists public.avaliacoes_hist (
+  id bigint generated always as identity primary key,
+  cliente_id bigint not null references public.clientes(id) on delete cascade,
+  data date not null default current_date,
+  rating numeric(2,1),
+  total int not null default 0,
+  criado_em timestamptz not null default now(),
+  unique (cliente_id, data)
+);
+alter table public.avaliacoes_hist enable row level security;
+-- políticas: ver/criar/editar = eh_ativo(); excluir = eh_admin() (mesmo padrão das outras tabelas)
