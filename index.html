@@ -503,7 +503,7 @@ const STEPS = [
     html:()=>{
       const head = `
       <div class="hero-card"><img src="img/card-ativa.webp" alt="Cliente aproximando o celular da placa"></div>
-      <h1 class="q" style="margin-top:20px">Vamos iniciar a configuração da sua <em>placa de avaliação</em>.</h1>`;
+      <h1 class="q" style="margin-top:20px">Vamos descobrir a <em>posição da sua empresa</em> no Google.</h1>`;
       if(A.place){ const P = A.place;
         return head + `<p class="qs">Confira se é a sua empresa:</p>
         <div class="placecard">
@@ -519,7 +519,7 @@ const STEPS = [
         <div class="field"><label for="fCidade">Cidade</label>
           <input class="input" id="fCidade" autocomplete="address-level2" placeholder="Ex.: São Paulo" value="${esc(A.cidade||"")}"></div>
         ${C.googleApiKey?`<button class="linkbtn" id="voltarBusca" type="button">🔎 Buscar minha empresa no Google</button>`:""}`; }
-      return head + `<p class="qs">Qual é o nome da sua empresa no Google? Digite e escolha na lista.</p>
+      return head + `<p class="qs">Busque sua empresa e escolha na lista. Vamos comparar com os concorrentes da sua região.</p>
         <div class="field gsearch">
           <span class="gs-ic">🔎</span>
           <input class="input" id="gq" autocomplete="off" placeholder="Digite o nome do seu negócio" value="${esc(A.busca||"")}">

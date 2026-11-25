@@ -191,7 +191,13 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .q-pos{color:var(--ok)} .q-neg{color:var(--bad)}
 .rolagem{max-height:372px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .sync{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(255,255,255,.55);margin-top:6px}
-.sync i{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.syncbtn{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);font-size:12.5px;font-weight:600;padding:5px 0}
+.syncbtn:hover{color:#fff}
+.syncbtn svg{width:15px;height:15px}
+.syncbtn.girando svg{animation:gira .6s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.mtop .syncbtn{color:var(--body);width:34px;height:34px;justify-content:center;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0}
+.mtop .syncbtn span{display:none}
 .mtop .sync{color:var(--muted);margin:0}
 .p-contato{background:#E0F2FE;color:#0369A1}
 .p-agendado{background:var(--violet-soft);color:var(--violet)}
@@ -1432,9 +1438,11 @@ let recarregando = false, pendente = false, tAoVivo = null, ultimaSync = 0, esta
 function digitando(){ const a = document.activeElement; return !!(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && $("#view").contains(a)); }
 function marcarSync(st){
   if (typeof st === "string") estadoCanal = st;
-  const vivo = estadoCanal === "SUBSCRIBED";
-  const min = ultimaSync ? Math.floor((Date.now() - ultimaSync) / 60000) : null;
-  document.querySelectorAll(".sync").forEach(el => el.innerHTML = `<i style="background:${vivo ? "#22C55E" : "#F59E0B"}"></i>${vivo ? "Ao vivo" : "Atualiza a cada 1 min"}${min != null ? " · " + (min < 1 ? "agora" : "há " + min + " min") : ""}`);
+  document.querySelectorAll(".sync").forEach(el => {
+    if (el.querySelector(".syncbtn")) return;
+    el.innerHTML = `<button class="syncbtn" title="Atualizar agora"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span>Atualizar</span></button>`;
+    el.querySelector(".syncbtn").onclick = async e => { const b = e.currentTarget; b.classList.add("girando"); await recarregarAoVivo(); setTimeout(() => b.classList.remove("girando"), 400); toast("Atualizado"); };
+  });
 }
 async function recarregarAoVivo(){
   if (!me || !me.ativo) return;
