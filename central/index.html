@@ -224,6 +224,66 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .pform{display:grid;grid-template-columns:1.3fr 1fr auto;gap:8px;margin-bottom:12px}
 .medal{text-align:center;font-weight:800;color:var(--muted)}
 @media (max-width:820px){ .avisos .cols{grid-template-columns:1fr} .pform{grid-template-columns:1fr 1fr} .pform .btn{grid-column:1/-1} .atv-form{grid-template-columns:1fr} }
+.dhead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.dhead h2{font-size:24px;letter-spacing:-.02em}
+.dhead p{color:var(--muted);font-size:13px;margin-top:2px}
+.dhead .icons{margin-left:auto;display:flex;gap:8px}
+.ibtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;color:var(--body)}
+.ibtn:hover{background:var(--bg)} .ibtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ibtn svg{width:17px;height:17px}
+.periodos{display:flex;gap:4px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;width:max-content;max-width:100%}
+.periodos button{padding:7px 13px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted)}
+.periodos button.on{background:var(--brand);color:#fff}
+.periodos input{border:0;font:inherit;font-size:12.5px;color:var(--body);padding:4px 6px;border-left:1px solid var(--line);background:transparent;max-width:150px}
+.gk{position:relative;overflow:hidden;border-radius:16px;padding:18px 18px 16px;color:#fff;min-height:118px;isolation:isolate}
+.gk::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 52%,rgba(255,255,255,.07) 52%,rgba(255,255,255,.07) 74%,transparent 74%);z-index:-1}
+.gk small{font-size:12.5px;font-weight:600;opacity:.9}
+.gk b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;margin:10px 0 6px}
+.gk em{font-style:normal;font-size:11.5px;opacity:.85;display:block}
+.gk em i{font-style:normal;font-weight:700;opacity:1}
+.gk .ic{position:absolute;right:14px;top:14px;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.14);display:grid;place-items:center}
+.gk .ic svg{width:17px;height:17px}
+.gk.g1{background:linear-gradient(135deg,#0B6B57,#064E3B)} .gk.g2{background:linear-gradient(135deg,#0E9F7A,#047857)}
+.gk.g3{background:linear-gradient(135deg,#C27C0E,#8A4B07)} .gk.g4{background:linear-gradient(135deg,#4F46E5,#312E81)} .gk.g5{background:linear-gradient(135deg,#E0364F,#9F1239)}
+.d2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px}
+.d3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}
+.chead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.chead .ico{width:34px;height:34px;border-radius:10px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center}
+.chead .ico svg{width:17px;height:17px}
+.chead b{display:block;font-size:14.5px} .chead small{display:block;font-size:12px;color:var(--muted)}
+.bigv{font-size:26px;font-weight:800;color:var(--brand);letter-spacing:-.02em;display:flex;align-items:center;gap:8px;margin:6px 0 8px}
+.delta{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok)}
+.delta.neg{background:var(--bad-soft);color:var(--bad)}
+.area{position:relative;height:230px}
+.area svg{width:100%;height:200px;display:block}
+.area .xl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+.area .yl{position:absolute;left:0;top:0;height:200px;display:flex;flex-direction:column;justify-content:space-between;font-size:10.5px;color:var(--muted);pointer-events:none}
+.area .tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:6px 9px;border-radius:8px;transform:translate(-50%,-110%);white-space:nowrap;opacity:0;transition:opacity .1s}
+.rv{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;background:#fff}
+.rv:hover{border-color:#C9D6F5}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800;flex-shrink:0}
+.rv .m{min-width:0;flex:1} .rv .m b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv .m small{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv .r{text-align:right;flex-shrink:0} .rv .r b{display:block;font-size:13px;color:var(--ok)} .rv .r small{font-size:11px;color:var(--muted)}
+.pg{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+.pg .ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.pg .m{flex:1;min-width:0} .pg .m b{display:block;font-size:13.5px} .pg .m small{font-size:12px;color:var(--muted)}
+.pg .bar{width:90px;height:6px;border-radius:9px;background:var(--bg);overflow:hidden} .pg .bar i{display:block;height:100%;border-radius:9px}
+.pg .pc{width:46px;text-align:right;font-weight:800;font-size:13px}
+.fun{display:flex;align-items:flex-end;justify-content:space-around;gap:10px;height:150px;margin-top:14px;border-bottom:1px solid var(--line)}
+.fun .c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.fun .c span{font-size:12px;font-weight:700;color:var(--muted)}
+.fun .c i{display:block;width:44px;border-radius:8px 8px 3px 3px;min-height:4px}
+.funl{display:flex;justify-content:space-around;gap:10px;margin-top:8px}
+.funl span{flex:1;text-align:center;font-size:11.5px;color:var(--muted)}
+.tk{border-radius:14px;padding:16px;color:#fff;background:linear-gradient(135deg,#2563EB,#1E3A8A);position:relative;overflow:hidden}
+.tk small{font-size:12px;opacity:.9} .tk b{display:block;font-size:24px;font-weight:800;margin:6px 0 4px} .tk em{font-style:normal;font-size:11.5px;opacity:.85}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.mini div{border:1px solid var(--line);border-radius:12px;padding:10px}
+.mini small{display:block;font-size:11.5px;color:var(--muted)} .mini b{font-size:17px}
+.privado .num,.privado .gk b,.privado .bigv,.privado .tk b,.privado .rv .r b,.privado .mini b{filter:blur(8px)}
+@media (max-width:1080px){ .d2,.d3{grid-template-columns:1fr} }
+@media (max-width:820px){ .dhead h2{font-size:20px} .gk b{font-size:21px} .gk{min-height:104px;padding:14px} .periodos{width:100%} .periodos button{padding:6px 9px} }
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -498,9 +558,11 @@ function ligarMes(){ const m = $("#mes"); if (m) m.onchange = () => { mes = m.va
 
 /* ===================== cálculos ===================== */
 const vendasValidas = arr => arr.filter(v => v.status !== "cancelado");
-function numerosDoMes(ym){
-  const vs = vendasValidas(vendas.filter(v => v.data.startsWith(ym)));
-  const ls = lanc.filter(l => l.data.startsWith(ym));
+function numerosDoMes(ym){ return numerosPeriodo(ym + "-01", ym + "-31"); }
+function numerosPeriodo(ini, fim){
+  const dentro = d => d >= ini && d <= fim;
+  const vs = vendasValidas(vendas.filter(v => dentro(v.data)));
+  const ls = lanc.filter(l => dentro(l.data));
   const fat = soma(vs, v => v.valor);
   const entradas = soma(ls.filter(l => l.tipo === "entrada"), l => l.valor);
   const custoVendas = soma(vs, v => v.custo);
@@ -514,47 +576,139 @@ function numerosDoMes(ym){
            insta: soma(vs, v => v.qtd_insta || 0),
            gNovo: vs.filter(v => servDe(v).includes("google_novo")).length,
            gAtual: vs.filter(v => servDe(v).includes("google_atualizacao")).length,
-           compras: soma(movs.filter(m => m.tipo === "entrada" && m.data.startsWith(ym)), m => m.qtd * m.custo_unit) };
+           compras: soma(movs.filter(m => m.tipo === "entrada" && dentro(m.data)), m => m.qtd * m.custo_unit) };
 }
 
 /* ===================== PAINEL ===================== */
+let PER = "semana";
+try { PER = localStorage.getItem("per") || "semana"; if (localStorage.getItem("privado") === "1") document.body.classList.add("privado"); } catch (e) {}
+const somaDias = (d, n) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+function periodo(){
+  const h = hoje(), y = +h.slice(0, 4), m = h.slice(0, 7);
+  const ultimo = ym => { const [a, b] = ym.split("-").map(Number); return ym + "-" + String(new Date(a, b, 0).getDate()).padStart(2, "0"); };
+  switch (PER) {
+    case "ontem": { const o = somaDias(h, -1); return { ini: o, fim: o, pIni: somaDias(h, -2), pFim: somaDias(h, -2), nome: "ontem", ant: "anteontem" }; }
+    case "hoje": return { ini: h, fim: h, pIni: somaDias(h, -1), pFim: somaDias(h, -1), nome: "hoje", ant: "ontem" };
+    case "mes": { const a = somaMes(m, -1); return { ini: m + "-01", fim: ultimo(m), pIni: a + "-01", pFim: ultimo(a), nome: "este mês", ant: "mês anterior" }; }
+    case "ano": return { ini: y + "-01-01", fim: y + "-12-31", pIni: (y - 1) + "-01-01", pFim: (y - 1) + "-12-31", nome: "este ano", ant: "ano anterior", porMes: true };
+    case "tudo": { const ds = [...vendas.map(v => v.data), ...lanc.map(l => l.data)].sort(); return { ini: ds[0] || h, fim: h, nome: "todo o período", ant: "", porMes: diasEntre(ds[0] || h, h) > 62 }; }
+    case "custom": { const a = somaMes(mes, -1); return { ini: mes + "-01", fim: ultimo(mes), pIni: a + "-01", pFim: ultimo(a), nome: nomeMes(mes), ant: "mês anterior" }; }
+    default: return { ini: somaDias(h, -6), fim: h, pIni: somaDias(h, -13), pFim: somaDias(h, -7), nome: "últimos 7 dias", ant: "semana anterior" };
+  }
+}
+const pct = (a, b) => !b ? (a ? 100 : 0) : Math.round((a - b) / b * 1000) / 10;
+const deltaTxt = (a, b, ant) => ant ? `<i>${pct(a, b) >= 0 ? "↗ +" : "↘ "}${String(pct(a, b)).replace(".", ",")}%</i> vs. ${ant}` : "&nbsp;";
+const corAv = t => ["#0EA5E9","#10B981","#F43F5E","#8B5CF6","#F59E0B","#14B8A6","#6366F1","#EC4899"][[...String(t)].reduce((a, c) => a + c.charCodeAt(0), 0) % 8];
+const iniciais = t => String(t || "?").replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+const SVG = {
+  cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>',
+  money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m23 6-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'
+};
+function graficoArea(pr){
+  // baldes diários (ou mensais em períodos longos) com a receita das vendas válidas
+  const pts = [];
+  if (pr.porMes) { let m = pr.ini.slice(0, 7); const f = pr.fim.slice(0, 7); while (m <= f) { pts.push({ k: m, rot: nomeMes(m), v: soma(vendasValidas(vendas.filter(v => v.data.startsWith(m))), v => v.valor) }); m = somaMes(m, 1); } }
+  else { let d = pr.ini; while (d <= pr.fim) { const dd = d; pts.push({ k: dd, rot: dd.slice(8) + "/" + dd.slice(5, 7), v: soma(vendasValidas(vendas.filter(v => v.data === dd)), v => v.valor) }); d = somaDias(d, 1); } }
+  if (pts.length === 1) pts.unshift({ k: "", rot: "", v: 0 });
+  const W = 600, H = 200, max = Math.max(1, ...pts.map(p => p.v)) * 1.15, n = pts.length;
+  const xy = pts.map((p, i) => [i / (n - 1) * W, H - p.v / max * (H - 8) - 2]);
+  let d = `M${xy[0][0]},${xy[0][1]}`;
+  for (let i = 1; i < n; i++) { const [x0, y0] = xy[i - 1], [x1, y1] = xy[i], dx = (x1 - x0) / 2; d += ` C${x0 + dx},${y0} ${x1 - dx},${y1} ${x1},${y1}`; }
+  const passo = Math.max(1, Math.ceil(n / 7));
+  const yTicks = [1, .75, .5, .25, 0].map(f => Math.round(max / 1.15 * f));
+  return `<div class="area" id="area">
+    <div class="yl">${yTicks.map(t => `<span>${t >= 1000 ? (t / 1000).toFixed(1).replace(".0", "") + "k" : t}</span>`).join("")}</div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="padding-left:28px;box-sizing:border-box">
+      <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B6FF5" stop-opacity=".35"/><stop offset="1" stop-color="#3B6FF5" stop-opacity="0"/></linearGradient></defs>
+      ${[0, .25, .5, .75].map(f => `<line x1="0" x2="${W}" y1="${f * H + 2}" y2="${f * H + 2}" stroke="#E5E9F2" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join("")}
+      <path d="${d} L${W},${H} L0,${H} Z" fill="url(#ga)"/>
+      <path d="${d}" fill="none" stroke="#2F5FE8" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <div class="xl" style="padding-left:28px">${pts.filter((p, i) => i % passo === 0 || i === n - 1).map(p => `<span>${p.rot}</span>`).join("")}</div>
+    <div class="tip" id="areaTip"></div></div>`;
+  // (os pontos ficam em window.__pts para o tooltip)
+}
+function ligarArea(pr){
+  const el = $("#area"); if (!el) return;
+  const svg = el.querySelector("svg"), tip = $("#areaTip");
+  const pts = [];
+  if (pr.porMes) { let m = pr.ini.slice(0, 7); while (m <= pr.fim.slice(0, 7)) { pts.push({ rot: nomeMes(m), v: soma(vendasValidas(vendas.filter(v => v.data.startsWith(m))), v => v.valor), q: vendasValidas(vendas.filter(v => v.data.startsWith(m))).length }); m = somaMes(m, 1); } }
+  else { let d = pr.ini; while (d <= pr.fim) { const dd = d, vs = vendasValidas(vendas.filter(v => v.data === dd)); pts.push({ rot: dd.slice(8) + "/" + dd.slice(5, 7), v: soma(vs, v => v.valor), q: vs.length }); d = somaDias(d, 1); } }
+  svg.onmousemove = e => {
+    const r = svg.getBoundingClientRect(), x = e.clientX - r.left - 28, w = r.width - 28;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round(x / w * (pts.length - 1)))); const p = pts[i]; if (!p) return;
+    tip.style.left = (28 + (pts.length > 1 ? i / (pts.length - 1) : 0) * w) + "px"; tip.style.top = (e.clientY - r.top) + "px";
+    tip.innerHTML = `${p.rot}: <b>${brl(p.v)}</b> · ${p.q} venda${p.q !== 1 ? "s" : ""}`; tip.style.opacity = 1;
+  };
+  svg.onmouseleave = () => tip.style.opacity = 0;
+}
 function painel(){
-  const n = numerosDoMes(mes), ant = numerosDoMes(somaMes(mes,-1));
-  const varia = (a,b) => !b ? "" : ((a-b)/b*100 >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round((a-b)/b*100)) + "% vs mês anterior";
-  const meses = Array.from({length:6}, (_,i) => somaMes(mes, i-5)).map(ym => ({ ym, ...numerosDoMes(ym) }));
-  const max = Math.max(1, ...meses.map(m => Math.max(m.fat + m.entradas, m.saidas)));
-  const porVend = equipe.map(p => ({ nome:p.nome || p.email, v: soma(n.vs.filter(v => v.vendedor_id === p.id), v => v.valor), q: n.vs.filter(v => v.vendedor_id === p.id).length })).filter(x => x.q).sort((a,b) => b.v - a.v);
-  const maxV = Math.max(1, ...porVend.map(x => x.v));
-  const doMes = vendas.filter(v => v.data.startsWith(mes));
-  const funil = Object.keys(ST_CLI).map(k => ({ k, q: clientes.filter(c => c.status === k).length }));
-  const maxF = Math.max(1, ...funil.map(f => f.q));
+  const pr = periodo(), n = numerosPeriodo(pr.ini, pr.fim), a = pr.pIni ? numerosPeriodo(pr.pIni, pr.pFim) : null;
+  const pend = n.vs.filter(v => v.status === "pendente"), pendA = a ? a.vs.filter(v => v.status === "pendente") : [];
+  const ticket = n.vs.length ? n.fat / n.vs.length : 0, ticketA = a && a.vs.length ? a.fat / a.vs.length : 0;
+  const recentes = vendas.filter(v => v.data >= pr.ini && v.data <= pr.fim);
+  // formas de pagamento
+  const formas = PAGTOS.map(f => { const vs = n.vs.filter(v => (v.pagamento || "").toLowerCase() === f.toLowerCase()); return { f, q: vs.length, v: soma(vs, v => v.valor) }; }).filter(x => x.q);
+  const icoPg = { Pix: ["❖", "#E6F7F1", "#0F9D58"], "Cartão": ["▭", "#EAF1FF", "#1A5CE5"], Boleto: ["▤", "#FFF4DE", "#B26A00"], Dinheiro: ["$", "#F1F5F9", "#475569"] };
+  // funil de conversão (clientes que entraram no período)
+  const novos = PER === "tudo" ? clientes : clientes.filter(c => (c.criado_em || "").slice(0, 10) >= pr.ini && (c.criado_em || "").slice(0, 10) <= pr.fim);
+  const etapa = st => novos.filter(c => st.includes(c.status)).length;
+  const fun = [["Leads", novos.length, "#93A8F8"], ["Contato feito", etapa(["contato","agendado","negociando","cliente"]), "#7C6CF2"], ["Reunião", etapa(["agendado","negociando","cliente"]), "#9B5CF6"], ["Clientes", etapa(["cliente"]), "#10B981"]];
+  const fMax = Math.max(1, ...fun.map(x => x[1]));
+  const conv = novos.length ? Math.round(etapa(["cliente"]) / novos.length * 1000) / 10 : 0;
+  const porVend = equipe.map(p => ({ nome: p.nome || p.email, v: soma(n.vs.filter(v => v.vendedor_id === p.id), v => v.valor), q: n.vs.filter(v => v.vendedor_id === p.id).length })).filter(x => x.q).sort((x, y) => y.v - x.v);
+  const PERS = [["ontem","Ontem"],["hoje","Hoje"],["semana","Semana"],["mes","Mês"],["ano","Ano"],["tudo","Tudo"]];
   $("#view").innerHTML = `
-    <div class="top"><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2>${seletorMes()}</div>
-    ${cardAvisos()}
+    <div class="dhead">
+      <div><h2>Olá, ${esc((me.nome || "").split(" ")[0] || "time")} 👋</h2><p>Acompanhe suas vendas e métricas em tempo real.</p></div>
+      <div class="icons"><button class="ibtn" id="dRef" title="Atualizar agora">${SVG.refresh}</button><button class="ibtn ${document.body.classList.contains("privado") ? "on" : ""}" id="dEye" title="Esconder valores">${SVG.eye}</button><button class="ibtn" id="dFin" title="Financeiro">${SVG.money}</button></div>
+    </div>
+    <div class="periodos" style="margin-bottom:16px">${PERS.map(([k, t]) => `<button data-per="${k}" class="${PER === k ? "on" : ""}">${t}</button>`).join("")}<input type="month" id="perMes" value="${mes}" title="Escolher um mês" class="${PER === "custom" ? "on" : ""}" style="${PER === "custom" ? "color:var(--brand);font-weight:700" : ""}"></div>
     <div class="grid kpis">
-      <div class="card kpi"><small>Faturamento</small><b class="num">${brl(n.fat)}</b><em>${varia(n.fat, ant.fat) || "Ticket médio " + brl(n.vs.length ? n.fat / n.vs.length : 0)}</em></div>
-      <div class="card kpi"><small>Vendas</small><b class="num">${n.vs.length}</b><em>${n.placas} placas${n.insta ? " · " + n.insta + " Instagram" : ""} · ${n.gNovo} Google novo · ${n.gAtual} atualiz.</em></div>
-      <div class="card kpi"><small>Saídas</small><b class="num">${brl(n.saidas)}</b><em>Custos ${brl(n.custos)} · Desp. ${brl(n.despesas)} · Invest. ${brl(n.invest)}</em></div>
-      <div class="card kpi ${n.resultado >= 0 ? "pos" : "neg"}"><small>Resultado do mês</small><b class="num">${brl(n.resultado)}</b><em>${n.receber ? "A receber " + brl(n.receber) : "Entradas − saídas"}</em></div>
+      <div class="gk g1"><div class="ic">${SVG.cart}</div><small>Total de vendas</small><b class="num">${n.vs.length}</b><em>${a ? deltaTxt(n.vs.length, a.vs.length, pr.ant) : pr.nome}</em></div>
+      <div class="gk g2"><div class="ic">${SVG.money}</div><small>Receita total</small><b class="num">${brl(n.fat)}</b><em>${a ? deltaTxt(n.fat, a.fat, pr.ant) : pr.nome}</em></div>
+      <div class="gk g3"><div class="ic">${SVG.clock}</div><small>Vendas pendentes</small><b class="num">${pend.length}${pend.length ? " · " + brl(soma(pend, v => v.valor)) : ""}</b><em>${a ? deltaTxt(pend.length, pendA.length, pr.ant) + "<br>" : ""}aguardando pagamento</em></div>
+      <div class="gk ${n.resultado >= 0 ? "g4" : "g5"}"><div class="ic">${SVG.trend}</div><small>Resultado (lucro)</small><b class="num">${brl(n.resultado)}</b><em>${a ? deltaTxt(n.resultado, a.resultado, pr.ant) : "entradas − saídas"}</em></div>
     </div>
-    <div class="grid two">
-      <div class="card"><h3>Últimos 6 meses <small>entradas × saídas</small></h3>
-        <div class="bars">${meses.map(m => `<div class="m" title="${nomeMes(m.ym)}: entradas ${brl(m.fat+m.entradas)} · saídas ${brl(m.saidas)}"><div class="pair"><i class="a" style="height:${(m.fat+m.entradas)/max*100}%"></i><i class="b" style="height:${m.saidas/max*100}%"></i></div><span>${nomeMes(m.ym)}</span></div>`).join("")}</div>
-        <div class="legend"><span><i style="background:var(--brand)"></i>Entradas</span><span><i style="background:#F59E0B"></i>Saídas</span></div>
+    <div style="margin-top:14px">${cardAvisos()}</div>
+    <div class="d2" style="margin-top:0">
+      <div class="card">
+        <div class="chead"><div class="ico">${SVG.chart}</div><div><b>Vendas</b><small>Receita no período · ${esc(pr.nome)}</small></div></div>
+        <div class="bigv num">${brl(n.fat)} ${a ? `<span class="delta ${pct(n.fat, a.fat) < 0 ? "neg" : ""}">${pct(n.fat, a.fat) >= 0 ? "↗ +" : "↘ "}${String(pct(n.fat, a.fat)).replace(".", ",")}%</span>` : ""}</div>
+        ${graficoArea(pr)}
       </div>
-      <div class="card"><h3>Vendas por vendedor <small>${nomeMes(mes)}</small></h3>
-        ${porVend.length ? porVend.map(x => `<div class="hb"><div><b>${esc(x.nome)}</b><span>${x.q} venda${x.q>1?"s":""} · ${brl(x.v)}</span></div><div class="tr"><i style="width:${x.v/maxV*100}%"></i></div></div>`).join("") : `<p class="hint">Nenhuma venda neste mês ainda.</p>`}
+      <div class="card"><h3>Vendas recentes <small>${recentes.length} no período</small><button class="btn ghost sm" data-go="clientes">Ver todos</button></h3>
+        <div class="rolagem" style="max-height:330px">${recentes.length ? recentes.map(v => { const c = cliente(v.cliente_id) || {}; const nm = c.empresa || "Sem cliente"; return `<div class="rv" data-venda="${v.id}"><div class="av" style="background:${corAv(nm)}">${iniciais(nm)}</div><div class="m"><b>${esc(nm)}</b><small>${esc(servTxt(v))}</small><small>${esc(nomeVend(v.vendedor_id))}${v.canal ? " · " + esc(v.canal) : ""}</small></div><div class="r"><b class="num" style="color:${v.status === "pendente" ? "var(--warn)" : v.status === "cancelado" ? "var(--bad)" : "var(--ok)"}">${brl(v.valor)}</b><small>${v.data.slice(8)}/${v.data.slice(5, 7)} · ${ST_VENDA[v.status]}</small></div></div>`; }).join("") : `<p class="hint">Nenhuma venda ${esc(pr.nome)}.</p>`}</div>
       </div>
     </div>
-    <div class="grid two">
-      <div class="card"><h3>Clientes do mês <small>${nomeMes(mes)} · ${doMes.length} venda${doMes.length!==1?"s":""}</small><a class="link" data-go="clientes">Ver todos</a></h3>
-        ${doMes.length ? `<div class="list rolagem" style="border:0">${doMes.map(linhaVenda).join("")}</div>` : `<p class="hint">Nenhuma venda em ${nomeMes(mes)}. Registre no botão <b>Nova venda</b>.</p>`}
+    <div class="d3">
+      <div class="card"><h3>Formas de pagamento <small>${n.vs.length} vendas</small></h3>
+        ${formas.length ? formas.map(x => { const ic = icoPg[x.f] || ["•", "#F1F5F9", "#475569"], pc = n.fat ? Math.round(x.v / n.fat * 1000) / 10 : 0; return `<div class="pg"><div class="ico" style="background:${ic[1]};color:${ic[2]}">${ic[0]}</div><div class="m"><b>${x.f}</b><small>${x.q} venda${x.q !== 1 ? "s" : ""} · <span class="num">${brl(x.v)}</span></small></div><div class="bar"><i style="width:${pc}%;background:${ic[2]}"></i></div><div class="pc" style="color:${ic[2]}">${String(pc).replace(".", ",")}%</div></div>`; }).join("") : `<p class="hint">Sem vendas no período.</p>`}
+        ${n.vs.length ? `<div class="pg"><div class="ico" style="background:var(--warn-soft);color:var(--warn)">⏳</div><div class="m"><b>Pendentes</b><small>${pend.length} de ${n.vs.length} vendas</small></div><div class="bar"><i style="width:${pend.length / n.vs.length * 100}%;background:var(--warn)"></i></div><div class="pc" style="color:var(--warn)">${Math.round(pend.length / n.vs.length * 100)}%</div></div>` : ""}
       </div>
-      <div class="card"><h3>Carteira de clientes <a class="link" data-go="clientes">Abrir</a></h3>
-        ${funil.map(f => `<div class="hb"><div><b>${ST_CLI[f.k]}</b><span>${f.q}</span></div><div class="tr"><i style="width:${f.q/maxF*100}%;background:var(--${COR_ST[f.k]})"></i></div></div>`).join("")}
+      <div class="card"><h3>Conversão do funil <small>clientes que entraram ${esc(pr.nome)}</small></h3>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end"><div><div class="bigv" style="color:var(--ok);margin:0">${String(conv).replace(".", ",")}%</div><small class="hint">Taxa de conversão (lead → cliente)</small></div><small class="hint" style="text-align:right">${etapa(["cliente"])} CLIENTES<br>${novos.length} NO FUNIL</small></div>
+        <div class="fun">${fun.map(x => `<div class="c"><span>${x[1]}</span><i style="height:${Math.max(3, x[1] / fMax * 110)}px;background:${x[2]}"></i></div>`).join("")}</div>
+        <div class="funl">${fun.map(x => `<span>${x[0]}</span>`).join("")}</div>
+      </div>
+      <div class="card"><h3>Ticket médio</h3>
+        <div class="tk"><small>Ticket médio</small><b class="num">${brl(ticket)}</b><em>${a ? deltaTxt(ticket, ticketA, pr.ant) : pr.nome}</em></div>
+        <div class="mini"><div><small>Placas NFC</small><b class="num">${n.placas}</b></div><div><small>Plaquinhas Instagram</small><b class="num">${n.insta}</b></div><div><small>Google novo</small><b class="num">${n.gNovo}</b></div><div><small>Atualizações Google</small><b class="num">${n.gAtual}</b></div></div>
+        ${porVend.length ? `<div class="av-h" style="margin-top:14px">Por vendedor</div>${porVend.map(x => `<div class="hb"><div><b>${esc(x.nome)}</b><span class="num">${x.q} · ${brl(x.v)}</span></div><div class="tr"><i style="width:${x.v / porVend[0].v * 100}%"></i></div></div>`).join("")}` : ""}
       </div>
     </div>`;
-  ligarMes(); ligarLinhas(); ligarAvisos();
+  ligarLinhas(); ligarAvisos(); ligarArea(pr);
+  document.querySelectorAll("[data-per]").forEach(b => b.onclick = () => { PER = b.dataset.per; try { localStorage.setItem("per", PER); } catch (e) {} painel(); });
+  $("#perMes").onchange = e => { if (!e.target.value) return; mes = e.target.value; PER = "custom"; painel(); };
+  $("#dRef").onclick = () => { recarregarAoVivo(); toast("Atualizado"); };
+  $("#dEye").onclick = () => { const on = document.body.classList.toggle("privado"); try { localStorage.setItem("privado", on ? "1" : "0"); } catch (e) {} painel(); };
+  $("#dFin").onclick = () => ir("financeiro");
   document.querySelectorAll("[data-go]").forEach(a => { a.style.cursor = "pointer"; a.onclick = () => ir(a.dataset.go); });
 }
 
