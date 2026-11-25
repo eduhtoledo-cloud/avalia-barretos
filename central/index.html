@@ -184,6 +184,9 @@ dialog::backdrop{background:rgba(11,15,25,.55)}
 .cfx b{display:block;font-size:13.5px;cursor:pointer} .cfx small{font-size:12px;color:var(--muted)}
 .q-pos{color:var(--ok)} .q-neg{color:var(--bad)}
 .rolagem{max-height:372px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.sync{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(255,255,255,.55);margin-top:6px}
+.sync i{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mtop .sync{color:var(--muted);margin:0}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .loading{display:grid;place-items:center;min-height:100svh;color:var(--muted)}
@@ -234,10 +237,10 @@ nav.bottom{display:none}
   <aside>
     <div class="logo"><img src="../favicon.svg" alt=""><span>Avalia <b>Brasil</b></span></div>
     <nav class="side" id="navSide"></nav>
-    <div class="me"><b id="meNome"></b><span id="mePapel"></span><br><button id="btnSair">Sair da conta</button></div>
+    <div class="me"><b id="meNome"></b><span id="mePapel"></span><br><button id="btnSair">Sair da conta</button><span class="sync"></span></div>
   </aside>
   <main>
-    <div class="mtop"><div class="logo"><img src="../favicon.svg" alt=""><span>Avalia <b>Brasil</b></span></div><button id="btnSairM">Sair</button></div>
+    <div class="mtop"><div class="logo"><img src="../favicon.svg" alt=""><span>Avalia <b>Brasil</b></span></div><span class="sync"></span><button id="btnSairM">Sair</button></div>
     <div id="view"></div>
   </main>
   <nav class="bottom" id="navBottom"></nav>
@@ -333,9 +336,10 @@ async function entrar(u){
   $("#mePapel").textContent = me.papel === "admin" ? "Administrador" : "Vendedor";
   show("app");
   montarNav();
-  await carregar();
+  await carregar(); ultimaSync = Date.now();
   ir(location.hash.replace("#","") || "painel");
   autoRanking();
+  iniciarAoVivo();
 }
 async function sair(){ await sb.auth.signOut(); location.hash = ""; telaLogin(); }
 $("#btnSair").onclick = sair; $("#btnSairM").onclick = sair;
@@ -1025,6 +1029,41 @@ function telaRanking(){
   ligarAbasClientes(); ligarLinhas();
   document.querySelectorAll("[data-rp]").forEach(b => b.onclick = () => { F.rPer = b.dataset.rp; telaRanking(); });
   $("#rkAtualizar").onclick = () => atualizarRanking(vinc);
+}
+
+/* ===================== atualização automática ===================== */
+let recarregando = false, pendente = false, tAoVivo = null, ultimaSync = 0, estadoCanal = "", aoVivoIniciado = false;
+function digitando(){ const a = document.activeElement; return !!(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && $("#view").contains(a)); }
+function marcarSync(st){
+  if (typeof st === "string") estadoCanal = st;
+  const vivo = estadoCanal === "SUBSCRIBED";
+  const min = ultimaSync ? Math.floor((Date.now() - ultimaSync) / 60000) : null;
+  document.querySelectorAll(".sync").forEach(el => el.innerHTML = `<i style="background:${vivo ? "#22C55E" : "#F59E0B"}"></i>${vivo ? "Ao vivo" : "Atualiza a cada 1 min"}${min != null ? " · " + (min < 1 ? "agora" : "há " + min + " min") : ""}`);
+}
+async function recarregarAoVivo(){
+  if (!me || !me.ativo) return;
+  if (recarregando) { pendente = true; return; }
+  recarregando = true;
+  try {
+    await carregar(); ultimaSync = Date.now(); marcarSync();
+    if ($("#dlg").open || digitando()) pendente = true;
+    else {
+      const y = scrollY, rl = (document.querySelector(".rolagem") || {}).scrollTop;
+      render(); scrollTo(0, y);
+      const r2 = document.querySelector(".rolagem"); if (r2 && rl) r2.scrollTop = rl;
+    }
+  } catch (e) {} finally { recarregando = false; }
+}
+const agendarAoVivo = () => { clearTimeout(tAoVivo); tAoVivo = setTimeout(recarregarAoVivo, 800); };
+function iniciarAoVivo(){
+  if (aoVivoIniciado) return; aoVivoIniciado = true;
+  try { sb.channel("central-ao-vivo").on("postgres_changes", { event: "*", schema: "public" }, agendarAoVivo).subscribe(st => marcarSync(st)); } catch (e) {}
+  setInterval(() => { if (!document.hidden) recarregarAoVivo(); }, 60000);
+  setInterval(marcarSync, 30000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - ultimaSync > 15000) recarregarAoVivo(); });
+  $("#dlg").addEventListener("close", () => { if (pendente) { pendente = false; setTimeout(recarregarAoVivo, 300); } });
+  $("#view").addEventListener("focusout", () => setTimeout(() => { if (pendente && !digitando() && !$("#dlg").open) { pendente = false; recarregarAoVivo(); } }, 200));
+  marcarSync();
 }
 
 /* ===================== EQUIPE ===================== */

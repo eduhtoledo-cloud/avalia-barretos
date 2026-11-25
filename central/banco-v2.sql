@@ -91,3 +91,7 @@ create table if not exists public.avaliacoes_hist (
 );
 alter table public.avaliacoes_hist enable row level security;
 -- políticas: ver/criar/editar = eh_ativo(); excluir = eh_admin() (mesmo padrão das outras tabelas)
+
+-- ---------- v4: tempo real (a central se atualiza sozinha) ----------
+-- alter publication supabase_realtime add table public.clientes, public.vendas, public.lancamentos,
+--   public.produtos, public.movimentos, public.custos_fixos, public.avaliacoes_hist, public.perfis;
