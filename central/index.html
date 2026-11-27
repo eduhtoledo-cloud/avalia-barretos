@@ -918,9 +918,9 @@ function telaVendas(){
     lista.map(v => { const c = cliente(v.cliente_id) || {}; return [v.data, c.empresa, c.telefone, c.cidade, servDe(v).map(k => SERVICOS[k] || k).join(" + "), v.qtd, v.cor, v.valor, v.custo, v.canal, v.pagamento, ST_VENDA[v.status], nomeVend(v.vendedor_id), v.obs]; }));
 }
 
-function abrirVenda(id, clienteId){
+function abrirVenda(id, clienteId, servIni){
   let G = null;   // empresa escolhida no Google (cliente novo)
-  const v = vendas.find(x => x.id === id) || { data: hoje(), qtd: 1, cor: "azul", servicos: ["placa"], valor: (K.kits[0]||{}).preco || 0, custo: 0, canal: "WhatsApp", pagamento: "Pix", status: "pago", vendedor_id: me.id, cliente_id: clienteId || null };
+  const v = vendas.find(x => x.id === id) || { data: hoje(), qtd: 1, cor: "azul", servicos: servIni && servIni.length ? servIni : ["placa"], valor: servIni && servIni.length && !servIni.includes("placa") ? 0 : (K.kits[0]||{}).preco || 0, custo: 0, canal: "WhatsApp", pagamento: "Pix", status: "pago", vendedor_id: me.id, cliente_id: clienteId || null };
   const baixaDe = cor => { const pr = prodCor(cor); return pr && id ? -soma(movs.filter(m => m.venda_id === id && m.produto_id === pr.id), m => m.qtd) : 0; };
   const qA0 = v.cor === "mista" ? baixaDe("azul") : 0, qP0 = v.cor === "mista" ? baixaDe("preta") : 0;
   let custoManual = !!id;
@@ -1094,6 +1094,9 @@ function abrirCliente(id){
     <label class="f"><span>Link do Google (perfil da empresa)</span><input class="in" name="google_link" type="url" value="${esc(c.google_link||"")}" placeholder="https://maps.google.com/…"></label>
     <label class="f"><span>Status</span></label>
     <div class="seg" data-seg="status">${Object.entries(ST_CLI).map(([k,t]) => `<button type="button" data-val="${k}" class="${c.status===k?"on":""}">${t}</button>`).join("")}</div>
+    <label class="f"><span>${id ? "Registrar uma compra deste cliente" : "O que ele comprou? (opcional)"}</span></label>
+    <div class="seg" id="cServ">${Object.entries(SERVICOS).map(([k,t]) => `<button type="button" data-sv="${k}">${t}</button>`).join("")}</div>
+    <p class="hint">Marque o que ele comprou: ao salvar, abre a venda já preenchida (quantidade, valor e baixa no estoque).</p>
     <label class="f"><span>Responsável</span><select class="in" name="vendedor_id">${equipe.filter(p => p.ativo || p.id === c.vendedor_id).map(p => `<option value="${p.id}" ${p.id===c.vendedor_id?"selected":""}>${esc(p.nome||p.email)}</option>`).join("")}</select></label>
     <label class="f"><span>Observação</span><textarea class="in" name="obs" placeholder="Próximo passo, melhor horário…">${esc(c.obs||"")}</textarea></label>
     ${id ? `<div class="atv"><div class="av-h">Agenda e histórico de contato</div>
@@ -1105,11 +1108,15 @@ function abrirCliente(id){
   async f => {
     const dados = {}; ["empresa","contato","telefone","cidade","segmento","email","google_link","place_id","obs","vendedor_id"].forEach(k => dados[k] = f[k].value.trim() || null);
     dados.status = segVal("status");
+    const comprou = [...document.querySelectorAll("#cServ button.on")].map(b => b.dataset.sv);
+    if (comprou.length && ["lead","contato","agendado","negociando","perdido"].includes(dados.status)) dados.status = "cliente";
     const salvo = await salvar("clientes", dados, id);
     if (P0 && P0.id === dados.place_id) await registrarAval(salvo.id, P0.rating, P0.count);
-    return id ? "Cliente atualizado" : "Cliente cadastrado";
+    if (comprou.length) { if (!id) clientes.push(salvo); else Object.assign(clientes.find(x => x.id === id) || {}, salvo); setTimeout(() => abrirVenda(null, salvo.id, comprou), 350); }
+    return comprou.length ? "Cliente salvo · complete a venda" : id ? "Cliente atualizado" : "Cliente cadastrado";
   }, id && me.papel === "admin" ? () => excluir("clientes", id) : null);
   const fc = $("#dlg form");
+  fc.querySelectorAll("#cServ button").forEach(b => b.onclick = () => b.classList.toggle("on"));
   buscaEmpresa(fc.empresa, {
     aoEscolher: ({ place: P }) => {
       const outro = clientes.find(x => x.id !== id && x.google_link && x.google_link === P.maps);
